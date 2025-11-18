@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime
 
 # 连接数据库
-conn = sqlite3.connect('D:\\dev\\spider\\baidu_user\\articles.db')
+conn = sqlite3.connect('money.db')
 cursor = conn.cursor()
 # 建表可以用 navicat
 
@@ -58,7 +58,7 @@ def cx_add(code, cx_code, name, cate):
     try:
         cursor.execute('''INSERT INTO "chenxing"("id", "code", "cx_code", "name", "cate") 
                     VALUES 
-            ('%s', '%s', '%s', '%s');''' % (
+            (NULL, '%s', '%s', '%s', '%s');''' % (
                 code, cx_code, name, cate,
             )
             
@@ -72,7 +72,9 @@ if __name__ == '__main__':
     # cx_add()
     
     import pandas as pd
-    df = pd.read_csv('')
+    df = pd.read_csv('out.csv', dtype=str)
+
+    # cx_data_init()
     
     num_rows = len(df)
     
@@ -93,11 +95,12 @@ if __name__ == '__main__':
             'code':code,
             'name':name,
             'fenlei':fenlei,
-            'cx_code':code,
+            'cx_code':cx_code,
         }
 
 
-    for item in datas:
+    for k in datas:
+        item = datas[k]
         code = item["code"]
         name = item["name"]
         fenlei = item["fenlei"]
