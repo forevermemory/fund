@@ -35,7 +35,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.m_tt_input_zhishu_name.setText('沪深300')
 
         self._print_txt('晨星数据加载中')
-        sql.cx_data_init()
+        # sql.cx_data_init()
         self._print_txt('晨星数据加载完成')
         
         self._load_datas()

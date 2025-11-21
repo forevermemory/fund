@@ -658,7 +658,7 @@ def _get_page_bond_datas(page)->list:
         'isab': '',
     }
 
-    text = session.get(_url,params=params, headers=headers).content.decode('utf8')
+    text = session.get(_url,params=params).content.decode('utf8')
 
     '''
     var rankData = {
