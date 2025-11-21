@@ -85,7 +85,8 @@ class MyThread_tt_do_get_bond_list(QThread):
         _my_log_set(self)
 
 
-    def set_params(self, _key, out_dir):
+    def set_params(self, out_dir):
+        self.out_dir = out_dir
         _my_log_set(self)
 
     def my_print(self,s:str):

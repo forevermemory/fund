@@ -640,7 +640,7 @@ def _get_page_bond_datas(page)->list:
         'isab': '',
     }
 
-    text = session.get(_url,params=params, headers=headers).content.decode('utf8')
+    text = session.get(_url,params=params).content.decode('utf8')
 
     '''
     var rankData = {
@@ -734,6 +734,8 @@ def tt_do_get_bond_list(out_dir: str):
         task_status_raw = json.loads(txt)
         fp2.close()
     
+    
+    has_excep = False
     for k in task_status:
         page = int(k)
         v = task_status[k]
@@ -753,6 +755,7 @@ def tt_do_get_bond_list(out_dir: str):
         except Exception as err:
             _my_print(f'下载第{page}页,异常,{err}')
             task_status_raw[k] = False
+            has_excep = True
 
         s2 = json.dumps(task_status_raw)
         fp_tmp = open(fname3, mode='w', encoding='utf8')
@@ -761,6 +764,9 @@ def tt_do_get_bond_list(out_dir: str):
 
     _my_print(f'下载完成')
     fp1.close()
+    
+    if has_excep:
+        return
 
     df = pd.read_csv(fname2, dtype=str)
     df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f9","e1","e2","e3"])
