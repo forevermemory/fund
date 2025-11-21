@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import os
-from datetime import datetime
+from datetime import datetime,date
 from collections import defaultdict
 
 from PyQt5 import QtWidgets
@@ -16,6 +16,23 @@ session = requests.Session()
 
 from tools.mylog import _my_print as mylog__mxxxxx
 
+
+def s_date_calc_since_totay(s)->int:
+    '''s:2009-07-21'''
+    target = datetime.strptime(s, "%Y-%m-%d").date()
+    today = date.today()
+
+    delta_days = (today - target).days
+    return delta_days
+
+def s_date_2_to_13_timestamp(s)->int:
+    '''s:2009-07-21'''
+    dt = datetime.strptime(s, "%Y-%m-%d")
+    # 转为秒级时间戳
+    ts_sec = int(dt.timestamp())
+    # 转成 13 位毫秒时间戳
+    ts_ms = ts_sec * 1000
+    return ts_ms
 
 def s_date_to_13_timestamp(s)->int:
     '''s:20251120'''
@@ -221,6 +238,7 @@ def _tt_do_search_fund_item(code: str)->dict:
 
     #
     cur_year = datetime.now().year
+    y0_desc = str(cur_year)
     y1_desc = str(cur_year-1)
     y2_desc = str(cur_year-2)
     y3_desc = str(cur_year-3)
@@ -253,7 +271,7 @@ def _tt_do_search_fund_item(code: str)->dict:
             '近2年': '',
             '近3年': '',
             '成立来': '',
-            y1_desc: '',
+             y1_desc: '',
             y2_desc: '',
             y3_desc: '',
             y4_desc: '',
@@ -665,7 +683,7 @@ def _get_page_bond_datas(page)->list:
     return res
     
 
-def tt_do_get_bond_list(out_dir: str):
+def tt_do_get_bond_list(out_dir: str, fr:str):
     # all pages 
     _url = 'https://fund.eastmoney.com/data/fundtradenewapi.aspx'
     params = {
@@ -678,7 +696,7 @@ def tt_do_get_bond_list(out_dir: str):
         'ct': '',
         'cd': '',
         'ms': '',
-        'fr': '',
+        'fr': fr,
         'plevel':'',
         'fst': '',
         'ftype':'',
@@ -765,3 +783,9 @@ def tt_do_get_bond_list(out_dir: str):
     df = pd.read_csv(fname2, dtype=str)
     df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f9","e1","e2","e3"])
     df.to_excel(f"{out_dir}/bond_1.xlsx", index=False)
+
+
+if __name__ == '__main__':
+    
+
+    pass

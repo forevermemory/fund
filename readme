@@ -1,4 +1,6 @@
 pip3 install pyqt5 pyqt5-tools
 pip3 install beautifulSoup4 pandas openpyxl
 pip3 install pyuic
+pip install SQLAlchemy
+
 pyuic5 mainwindow/mainwindow.ui -o mainwindow.py

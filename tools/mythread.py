@@ -85,7 +85,9 @@ class MyThread_tt_do_get_bond_list(QThread):
         _my_log_set(self)
 
 
-    def set_params(self, _key, out_dir):
+    def set_params(self, fr, out_dir):
+        self.out_dir = out_dir
+        self.fr = fr
         _my_log_set(self)
 
     def my_print(self,s:str):
@@ -93,6 +95,6 @@ class MyThread_tt_do_get_bond_list(QThread):
 
     def run(self):
         self.my_print("处理债券基金开始")
-        tt_do_get_bond_list(self.out_dir)
+        tt_do_get_bond_list(self.out_dir, self.fr)
         self.my_print("处理债券基金完成")
 
