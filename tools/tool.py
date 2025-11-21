@@ -16,6 +16,85 @@ session = requests.Session()
 
 from tools.mylog import _my_print as mylog__mxxxxx
 
+
+def s_date_to_13_timestamp(s)->int:
+    '''s:20251120'''
+    dt = datetime.strptime(s, "%Y%m%d")
+    # 转为秒级时间戳
+    ts_sec = int(dt.timestamp())
+    # 转成 13 位毫秒时间戳
+    ts_ms = ts_sec * 1000
+    return ts_ms
+
+def tm_get_13_timestamp() -> int:
+    dt = datetime.now()
+    ts_sec = int(dt.timestamp())
+    ts_ms = ts_sec * 1000
+    return ts_ms
+
+
+def calc_year_max_drawdown(data:list) ->dict:
+    '''[(1761580800000, 246.2554), ...]'''
+
+    g_length = len(data)
+        
+    huiches = []
+    
+    for i in range(2, g_length):
+        _min_data = data[i][0]
+        _min = data[i][1]
+        _max = 0
+
+        for index,item in enumerate(data[:i]):
+            dt2 = item[0]
+            value2 = item[1]
+            # 向左边找到最大值
+            if value2 > _max:
+                _max = value2
+                _max_date = dt2
+
+        # _max
+        # print(f"min: {_min}, _min_date: {datetime.datetime.fromtimestamp(_min_date / 1000).date()}, ")
+        
+        huiches.append({
+            '_min':_min,
+            '_min_date':_min_data,
+            '_min_date2':datetime.fromtimestamp(_min_data / 1000).date(),
+            '_max':_max,
+            '_max_date':_max_date,
+            '_max_date2':datetime.fromtimestamp(_max_date / 1000).date(),
+            'hc':(_max-_min)/_max*100,
+        })
+
+    huiches.sort(key=lambda x: x['hc'], reverse=True)
+    hc = huiches[0]
+    # print(hc)
+    return hc
+
+
+def year_data_group_by_year(data:list)->dict:
+    '''data: [[20251120, 11.1],...]'''
+    groups = defaultdict(list)
+
+    for ts_ms, value in data:
+        # 毫秒时间戳 -> datetime
+        dt = datetime.fromtimestamp(ts_ms / 1000)
+        # groups[year].append((dt, value))
+        
+        ### 
+        # ps:有些有很多年的数据,不需要超过8年的
+        # if dt.year < cur_year - 8:
+        #     continue
+        
+        groups[dt.year].append((ts_ms, value))
+    return groups
+
+def calc_year_annualized(data:list)->float:
+    '''计算年化收益: [(1761580800000, 246.2554), ...]'''
+    _start = data[0][1]
+    _end = data[-1][1]
+    return _end - _start
+
 def _my_print(s):
     mylog__mxxxxx(s)
 
@@ -487,3 +566,51 @@ def tt_do_get_max_drawdown(_key:str, out_dir: str):
     out = pd.DataFrame(datas)
     out.to_excel(f"{out_dir}/{_key}-详情-回撤.xlsx", index=False)
     out.to_csv(f"{out_dir}/{_key}-详情-回撤.csv", index=False)
+
+
+
+def calc_cur_bond_div_stock()->float:
+    '''计算当前债股比'''
+    # 十年期国债收益率
+    # 地址先打开：https://quote.eastmoney.com/stock/171.CN10Y.html
+    # 找到接口
+    ntm = tm_get_13_timestamp()
+    params = {
+        'invt':'2',
+        'fltt':'1',
+        'cb':'jQuery35105820718960618639_'+str(ntm),
+        'fields':'f43',
+        'secid':'171.CN10Y',
+        'ut':'fa5fd1943c7b386f172d6893dbfba10b',
+        'dect':'1',
+        'wbp2u':'|0|0|0|web',
+        '_': str(ntm),
+
+    }
+    res = session.get('https://push2.eastmoney.com/api/qt/stock/get', params=params)
+
+    txt = res.content.decode('utf8')
+    m = re.search(r'\((.*)\)', txt, re.S)
+    if m == None:
+        return 0
+
+    json_data = json.loads(m.group(1))
+    snq = json_data['data']['f43'] / 10000
+    print('十年期国债:', snq)
+    
+    
+    ###### 
+    txt = session.get('https://quote.eastmoney.com/newapi/sczm').content.decode('utf8')
+    json_data = json.loads(txt)
+    ss = json_data['ss']['ttm']
+    cyb = json_data['cyb']['ttm']
+    hs = json_data['hs']['ttm']
+    print('ss:', ss)
+    print('hs:', hs)
+    print('cyb:', cyb)
+    avgv = ( ss+hs+cyb)/ 3
+    print('平均:',avgv)
+    
+    v = 1/avgv*100/ snq
+    print('当前债股收益率比:', v)
+    return v
