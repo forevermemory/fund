@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1000, 669)
+        MainWindow.resize(571, 676)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.m_log = QtWidgets.QTextBrowser(self.centralwidget)
@@ -43,6 +43,12 @@ class Ui_MainWindow(object):
         self.m_tt_btn_search_drawdown = QtWidgets.QPushButton(self.m_tiantian)
         self.m_tt_btn_search_drawdown.setGeometry(QtCore.QRect(270, 70, 75, 23))
         self.m_tt_btn_search_drawdown.setObjectName("m_tt_btn_search_drawdown")
+        self.m_tt_btn_search_bond = QtWidgets.QPushButton(self.m_tiantian)
+        self.m_tt_btn_search_bond.setGeometry(QtCore.QRect(360, 40, 75, 23))
+        self.m_tt_btn_search_bond.setObjectName("m_tt_btn_search_bond")
+        self.m_tt_btn_search_bond2 = QtWidgets.QPushButton(self.m_tiantian)
+        self.m_tt_btn_search_bond2.setGeometry(QtCore.QRect(360, 80, 75, 23))
+        self.m_tt_btn_search_bond2.setObjectName("m_tt_btn_search_bond2")
         self.tabWidget.addTab(self.m_tiantian, "")
         self.m_zhongzheng = QtWidgets.QWidget()
         self.m_zhongzheng.setObjectName("m_zhongzheng")
@@ -58,12 +64,12 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.m_zhongzhai, "")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1000, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 571, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(3)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -74,6 +80,8 @@ class Ui_MainWindow(object):
         self.m_tt_btn_search_zhishu.setText(_translate("MainWindow", "搜索"))
         self.m_tt_btn_search_detail.setText(_translate("MainWindow", "获取详情"))
         self.m_tt_btn_search_drawdown.setText(_translate("MainWindow", "获取回撤"))
+        self.m_tt_btn_search_bond.setText(_translate("MainWindow", "bond"))
+        self.m_tt_btn_search_bond2.setText(_translate("MainWindow", "bond2"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.m_tiantian), _translate("MainWindow", "天天"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.m_zhongzheng), _translate("MainWindow", "中证指数"))
         self.m_info_bond_div_stock.setText(_translate("MainWindow", "显示债股比"))

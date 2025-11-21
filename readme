@@ -4,3 +4,13 @@ pip3 install pyuic
 pip install SQLAlchemy
 
 pyuic5 mainwindow/mainwindow.ui -o mainwindow.py
+
+https://fund.eastmoney.com/data/fundtradenewapi.aspx
+的fr参数如下
+    041 长期纯债
+    042 短期纯债
+    043 混合债
+    044 定开
+    045 可转债
+
+f7:
