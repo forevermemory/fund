@@ -615,3 +615,153 @@ def _calc_cur_bond_div_stock_stock()->float:
     # v = 1/avgv*100/ snq
     # print('当前债股收益率比:', v)
     return avgv
+
+
+
+def _get_page_bond_datas(page)->list:
+    
+    _url = 'https://fund.eastmoney.com/data/fundtradenewapi.aspx'
+    params = {
+        'ft': 'zq',
+        'sc': '1n',
+        'st': 'desc',
+        'pi': str(page),
+        'pn': '100',
+        'cp': '',
+        'ct': '',
+        'cd': '',
+        'ms': '',
+        'fr': '',
+        'plevel':'',
+        'fst': '',
+        'ftype':'',
+        'fr1': '',
+        'fl': '0',
+        'isab': '',
+    }
+
+    text = session.get(_url,params=params, headers=headers).content.decode('utf8')
+
+    '''
+    var rankData = {
+        datas: ["020824|汇泉安阳纯债C|债券型|2025-11-20|1.6175|0.00|0.01|0.29|0.29|43.88|49.35|||47.98|101.20|0|0|1|0.00|0||041|0|4|---||0.00%||", "021928|湘财鑫裕纯债A|债券型|2025-11-20|1.4532|0.00|0.01|0.06|0.13|0.01|44.93|||44.69|45.54|3|1|1|0.06|0||041|1|1|10元|0.60%|0.06%|0.06%|1", "007033|平安可转债债券C|债券型|2025-11-20|1.2667|-0.27|-1.45|3.23|0.68|13.22|20.23|15.79|4.77|18.06|26.67|3|0|1|0.00|0||043,045|1|1|10元||0.00%||"],
+        allRecords: 5926,
+        pageIndex: 1,
+        pageNum: 100,
+        allPages: 60
+    };
+    '''
+
+    # all_pages = re.search(r'allPages\s*:\s*(\d+)', text).group(1)
+    datas_str = re.search(r'datas\s*:\s*\[(.*?)\]', text, re.S).group(1)
+    datas = re.findall(r'"(.*?)"', datas_str)
+
+    res = []
+ 
+    for d in datas:
+        s1 = d.replace(',','_')
+        s = s1.replace('|',',')
+        res.append(s)
+    return res
+    
+
+def tt_do_get_bond_list(out_dir: str):
+    # all pages 
+    _url = 'https://fund.eastmoney.com/data/fundtradenewapi.aspx'
+    params = {
+        'ft': 'zq',
+        'sc': '1n',
+        'st': 'desc',
+        'pi': '1',
+        'pn': '100',
+        'cp': '',
+        'ct': '',
+        'cd': '',
+        'ms': '',
+        'fr': '',
+        'plevel':'',
+        'fst': '',
+        'ftype':'',
+        'fr1': '',
+        'fl': '0',
+        'isab': '',
+    }
+
+    text = session.get(_url,params=params).content.decode('utf8')
+    all_pages = re.search(r'allPages\s*:\s*(\d+)', text).group(1)
+    all_records = re.search(r'allRecords\s*:\s*(\d+)', text).group(1)
+
+    all_pages = int(all_pages)
+    s1 = f'债券基金所有页数为:{all_pages}, 总条数:{all_records}'
+    _my_print(s1)
+
+
+    ########## 
+    fname = f"{out_dir}/bond_1.xlsx"
+
+    if check_file_is_exist(fname):
+        s1 = f'债券基金数据当日已经获取'
+        _my_print(s1)
+        return
+
+    # 
+    fname2 = f"{out_dir}/bond_1.csv"
+    fname3 = f"{out_dir}/bond_1.json"
+
+    fp1 = None
+    if not check_file_is_exist(fname2):
+        fp1 = open(fname2, mode='w', encoding='utf8')
+        fp1.write('code,名称,类型,日期,净值,日增长率,近1周,近1月,近3月,近6月,近1年,近2年,近3年,今年来,成立来,f1,f2,f3,f4,f5,f6,f7,可购买,f9,起购金额,费率,e1,e2,e3\n')
+    else:
+        fp1 = open(fname2, mode='w', encoding='utf8')
+
+    # start task
+    task_status = {}
+    task_status_raw = {}
+    for i in range(1,all_pages+1):
+        task_status[str(i)] = False
+        task_status_raw[str(i)] = False
+
+    if not check_file_is_exist(fname3):
+        s2 = json.dumps(task_status)
+        fp2 = open(fname3, mode='w', encoding='utf8')
+        fp2.write(s2)
+        fp2.close()
+    else:
+        fp2 = open(fname3, mode='r', encoding='utf8')
+        txt = fp2.read()
+        task_status = json.loads(txt)
+        task_status_raw = json.loads(txt)
+        fp2.close()
+    
+    for k in task_status:
+        page = int(k)
+        v = task_status[k]
+        if bool(v):
+            _my_print(f'当前页{page}已处理')
+            continue
+        
+        try:
+            _my_print(f'下载第{page}页')
+            datas = _get_page_bond_datas(page)
+            for d in datas:
+                fp1.write(d)
+                fp1.write('\n')
+            
+            task_status_raw[k] = True
+
+        except Exception as err:
+            _my_print(f'下载第{page}页,异常,{err}')
+            task_status_raw[k] = False
+
+        s2 = json.dumps(task_status_raw)
+        fp_tmp = open(fname3, mode='w', encoding='utf8')
+        fp_tmp.write(s2)
+        fp_tmp.close()
+
+    _my_print(f'下载完成')
+    fp1.close()
+
+    df = pd.read_csv(fname2, dtype=str)
+    df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f9","e1","e2","e3"])
+    df.to_excel(f"{out_dir}/bond_1.xlsx", index=False)
