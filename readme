@@ -1,3 +1,4 @@
 pip3 install pyqt5 pyqt5-tools
 pip3 install beautifulSoup4 pandas openpyxl
-pyuic5 mainwindow.ui -o mainwindow.py
+pip3 install pyuic
+pyuic5 mainwindow/mainwindow.ui -o mainwindow.py
