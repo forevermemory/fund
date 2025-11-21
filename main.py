@@ -37,6 +37,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self._print_txt('晨星数据加载中')
         sql.cx_data_init()
         self._print_txt('晨星数据加载完成')
+        
+        self._load_datas()
 
     def init_ui(self):
         self.setupUi(self)
@@ -57,11 +59,30 @@ class Window(QMainWindow, Ui_MainWindow):
         self._mythread_s_list= mythread.MyThread_tt_do_search_zhishu_list()
         self._mythread_s_list.on_out_text_signal.connect(self._print_txt)
 
+
     def _get_today_dir(self)->str:
         return "datas/"+tool.get_year_month_day()
 
     def _print_txt(self, s):
         self.m_log.append(s)
+        
+    ########## 加载数据
+    def _load_datas(self):
+        self._load_data_zhongzhaizhishu()
+    def _load_data_zhongzhaizhishu(self):
+
+        self.m_comb_zz_show_list.setMaxVisibleItems(30)
+
+        fp = open('data/中债指数.txt', mode='r', encoding='utf8')
+        txt = fp.read()
+        fp.close()
+        
+        items = txt.split('\n')
+        for item in items:
+            name_code = item.split(',')
+            name = name_code[0].replace('中债-', '')
+            self.m_comb_zz_show_list.addItem(name, name_code[1])
+
 
     ################### 信号
 
@@ -117,9 +138,19 @@ class Window(QMainWindow, Ui_MainWindow):
         self._mythread_get_max_drawdown.start()
 
         print("============222=")
+        
+    @pyqtSlot()
+    def on_m_info_bond_div_stock_clicked(self):
+        self._print_txt('正在查询,请勿操作...')
 
+
+        snq = tool._calc_cur_bond_div_stock_bond()
+        self._print_txt(f'十年期国债收益率为:{snq}')
+        avgv = tool._calc_cur_bond_div_stock_stock()
+        self._print_txt(f'A股票的平均市盈为:{avgv}')
  
-
+        v = 1/avgv*100/ snq
+        self._print_txt(f'当前债股收益率比:{v}')
 
 
 

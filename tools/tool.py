@@ -568,9 +568,7 @@ def tt_do_get_max_drawdown(_key:str, out_dir: str):
     out.to_csv(f"{out_dir}/{_key}-详情-回撤.csv", index=False)
 
 
-
-def calc_cur_bond_div_stock()->float:
-    '''计算当前债股比'''
+def _calc_cur_bond_div_stock_bond()->float:
     # 十年期国债收益率
     # 地址先打开：https://quote.eastmoney.com/stock/171.CN10Y.html
     # 找到接口
@@ -596,8 +594,11 @@ def calc_cur_bond_div_stock()->float:
 
     json_data = json.loads(m.group(1))
     snq = json_data['data']['f43'] / 10000
-    print('十年期国债:', snq)
-    
+    # print('十年期国债:', snq)
+    return snq
+
+def _calc_cur_bond_div_stock_stock()->float:
+    '''计算当前债股比'''
     
     ###### 
     txt = session.get('https://quote.eastmoney.com/newapi/sczm').content.decode('utf8')
@@ -605,12 +606,12 @@ def calc_cur_bond_div_stock()->float:
     ss = json_data['ss']['ttm']
     cyb = json_data['cyb']['ttm']
     hs = json_data['hs']['ttm']
-    print('ss:', ss)
-    print('hs:', hs)
-    print('cyb:', cyb)
+    # print('ss:', ss)
+    # print('hs:', hs)
+    # print('cyb:', cyb)
     avgv = ( ss+hs+cyb)/ 3
-    print('平均:',avgv)
+    # print('平均:',avgv)
     
-    v = 1/avgv*100/ snq
-    print('当前债股收益率比:', v)
-    return v
+    # v = 1/avgv*100/ snq
+    # print('当前债股收益率比:', v)
+    return avgv
