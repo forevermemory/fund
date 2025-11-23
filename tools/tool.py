@@ -8,14 +8,33 @@ import time
 import os
 from datetime import datetime,date
 from collections import defaultdict
+from openpyxl import load_workbook
 
 from PyQt5 import QtWidgets
 from PyQt5.Qt import *
 
-session = requests.Session()
+req_session = requests.Session()
 
 from tools.mylog import _my_print as mylog__mxxxxx
 
+
+def s_to_float(s:str)->float:
+    '''0.80%'''
+    v = 0.00
+
+    if s == None:
+        return v
+
+    if type(s) == float:
+        return s
+
+    s2 = s.replace('%','')
+    try:
+        v = float(s2)
+    except Exception as _:
+        v = 0.00
+
+    return v
 
 def s_date_calc_since_totay(s)->int:
     '''s:2009-07-21'''
@@ -124,6 +143,23 @@ def parse_jsonp_response(data: str):
     return json_data
 
 
+def get_excel_skip_hidden(filename, sheet_name='Sheet1'):
+    # 先用 openpyxl 打开
+    wb = load_workbook(filename, data_only=True)
+    ws = wb[sheet_name]
+
+    # 找出隐藏的行号（注意 Excel 行号从 1 开始）
+    hidden_rows = [
+        row for row, dim in ws.row_dimensions.items()
+        if dim.hidden
+    ]
+
+    # pandas 的 skiprows 从 0 开始，所以要 -1
+    skip = [r - 1 for r in hidden_rows]
+
+    # 正式读取
+    return skip
+
 def check_dir(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -152,7 +188,7 @@ def tt_do_search_zhishu(key: str, out_dir: str):
 
     _my_print("first search start:")
 
-    r = session.get(_url, params=params)
+    r = req_session.get(_url, params=params)
     r.encoding = "utf-8"
     m = re.search(r'\((.*)\)', r.text, re.S)
     if m is None:
@@ -183,7 +219,7 @@ def tt_do_search_zhishu(key: str, out_dir: str):
         }
         s1 = "next search: %d - %d" % (page_size, page_total)
         _my_print(s1)
-        r = session.get(_url, params=params)
+        r = req_session.get(_url, params=params)
         r.encoding = "utf-8"
         m = re.search(r'\((.*)\)', r.text, re.S)
         if m is None:
@@ -211,7 +247,7 @@ def _tt_do_search_fund_item(code: str)->dict:
 
     _url = 'https://fund.eastmoney.com/%s.html' % (code)
 
-    r = session.get(_url)
+    r = req_session.get(_url)
     # 可能是后端，然后重定向
 
     text = r.content.decode('utf8')
@@ -447,7 +483,7 @@ def _tt_do_get_max_drawdown(code:str) -> dict:
     _url = 'https://fund.eastmoney.com/pingzhongdata/%s.js?v=%s' % (code, now_str)
     
     # print(_url)
-    r = session.get(_url)
+    r = req_session.get(_url)
     js_source = r.content.decode('utf8')
     # js_source = js_source
     
@@ -603,7 +639,7 @@ def _calc_cur_bond_div_stock_bond()->float:
         '_': str(ntm),
 
     }
-    res = session.get('https://push2.eastmoney.com/api/qt/stock/get', params=params)
+    res = req_session.get('https://push2.eastmoney.com/api/qt/stock/get', params=params)
 
     txt = res.content.decode('utf8')
     m = re.search(r'\((.*)\)', txt, re.S)
@@ -619,7 +655,7 @@ def _calc_cur_bond_div_stock_stock()->float:
     '''计算当前债股比'''
     
     ###### 
-    txt = session.get('https://quote.eastmoney.com/newapi/sczm').content.decode('utf8')
+    txt = req_session.get('https://quote.eastmoney.com/newapi/sczm').content.decode('utf8')
     json_data = json.loads(txt)
     ss = json_data['ss']['ttm']
     cyb = json_data['cyb']['ttm']
@@ -658,7 +694,7 @@ def _get_page_bond_datas(page)->list:
         'isab': '',
     }
 
-    text = session.get(_url,params=params).content.decode('utf8')
+    text = req_session.get(_url,params=params).content.decode('utf8')
 
     '''
     var rankData = {
@@ -681,9 +717,9 @@ def _get_page_bond_datas(page)->list:
         s = s1.replace('|',',')
         res.append(s)
     return res
-    
 
-def tt_do_get_bond_list(out_dir: str, fr:str):
+
+def __check_bond_list(out_dir:str, fr:str)->bool:
     # all pages 
     _url = 'https://fund.eastmoney.com/data/fundtradenewapi.aspx'
     params = {
@@ -705,7 +741,7 @@ def tt_do_get_bond_list(out_dir: str, fr:str):
         'isab': '',
     }
 
-    text = session.get(_url,params=params).content.decode('utf8')
+    text = req_session.get(_url, params=params).content.decode('utf8')
     all_pages = re.search(r'allPages\s*:\s*(\d+)', text).group(1)
     all_records = re.search(r'allRecords\s*:\s*(\d+)', text).group(1)
 
@@ -715,14 +751,6 @@ def tt_do_get_bond_list(out_dir: str, fr:str):
 
 
     ########## 
-    fname = f"{out_dir}/bond_1.xlsx"
-
-    if check_file_is_exist(fname):
-        s1 = f'债券基金数据当日已经获取'
-        _my_print(s1)
-        return
-
-    # 
     fname2 = f"{out_dir}/bond_1.csv"
     fname3 = f"{out_dir}/bond_1.json"
 
@@ -784,14 +812,181 @@ def tt_do_get_bond_list(out_dir: str, fr:str):
     fp1.close()
     
     if has_excep:
-        return
+        return False
 
-    df = pd.read_csv(fname2, dtype=str)
+def tt_do_get_bond_list(out_dir: str, fr:str):
+    fname = f"{out_dir}/bond_1.xlsx"
+
+    if not check_file_is_exist(fname):
+        __check_bond_list(out_dir,fr)
+
+    ### to db
+    df = pd.read_excel(fname, dtype=str)
+    # f7
+    # 041 长期纯债
+    # 042 短期纯债
+    # 043 混合债
+    # 044 定开
+    # 045 可转债
+    mapping = {
+        "041": "长期纯债",
+        "042": "短期纯债",
+        "043": "混合债",
+        "044": "定开债",
+        "071": "定开债",
+        "045": "可转债",
+    }
+
+    def repl_bond_fund_cate(m):
+        return mapping[m.group(0)]
+    
+    pattern = re.compile("|".join(mapping.keys()))
+    df["f7"] = df["f7"].str.replace(pattern, repl_bond_fund_cate, regex=True)
+
     df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f9","e1","e2","e3"])
     df.to_excel(f"{out_dir}/bond_1.xlsx", index=False)
 
+    _my_print(f'插入数据库开始')
+
+    # to db
+    for index, row in df.iterrows():
+        b = BondFund()
+        b.code = row["code"]
+        b.name = row["名称"]
+        b.near_1w = s_to_float(row["近1周"])
+        b.near_1m = s_to_float(row["近1月"])
+        b.near_3m = s_to_float(row["近3月"])
+        b.near_6m = s_to_float(row["近6月"])
+        b.near_1y = s_to_float(row["近1年"])
+        b.near_2y = s_to_float(row["近2年"])
+        b.near_3y = s_to_float(row["近3年"])
+        b.near_now_y = s_to_float(row["今年来"])
+        b.near_all_y = s_to_float(row["成立来"])
+        b.buy_rate = s_to_float(row["费率"])
+        b.update_flag = '0'
+
+        b.establish_date = ''
+        b.total_money = 0.0
+        b.company = ''
+        b.manager = ''
+
+        # 年化收益
+        b.nh_cur = 0.0 
+        b.nh_1 = 0.0 
+        b.nh_2 = 0.0 
+        b.nh_3 = 0.0 
+        b.nh_4 = 0.0 
+        b.nh_5 = 0.0 
+        b.nh_6 = 0.0 
+        b.nh_7 = 0.0 
+        b.nh_8 = 0.0 
+
+        # 最大回撤
+        b.hc_cur = 0.0 
+        b.hc_1 = 0.0 
+        b.hc_2 = 0.0 
+        b.hc_3 = 0.0 
+        b.hc_4 = 0.0 
+        b.hc_5 = 0.0 
+        b.hc_6 = 0.0 
+        b.hc_7 = 0.0 
+        b.hc_8 = 0.0 
+
+        # 近三年
+        # standard deviation
+        b.std_1 = 0.0
+        b.std_2 = 0.0
+        b.std_3 = 0.0
+
+        # Sharpe Ratio
+        b.sharpe_1 = 0.0
+        b.sharpe_2 = 0.0
+        b.sharpe_3 = 0.0
+        
+        # print(b.name,b.buy_rate, b.near_3y)
+        try:
+            sql_session.add(b)
+            sql_session.commit()
+        except Exception as err:
+            _my_print(f'插入数据库异常:{b.code, b.name}')
+
+    _my_print(f'插入数据库结束')
+
+
+from tools.sql import BondFund,sql_session
+from tools.tool import _tt_do_search_fund_item
+
+
+def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
+    '''年化、回撤'''
+
+    fname = f"{out_dir}/bond_1.xlsx"
+    sheet_name = "Sheet1"
+    skip = get_excel_skip_hidden(fname, sheet_name)
+    df = pd.read_excel(fname,dtype=str, sheet_name=sheet_name, skiprows=skip)
+    df = df.fillna(0)
+
+
+    fonds = sql_session.query(BondFund).all()
+    length = len(fonds)
+
+    cur_year = datetime.now().year
+    y0_desc = str(cur_year)
+    y1_desc = str(cur_year-1)
+    y2_desc = str(cur_year-2)
+    y3_desc = str(cur_year-3)
+    y4_desc = str(cur_year-4)
+    y5_desc = str(cur_year-5)
+    y6_desc = str(cur_year-6)
+    y7_desc = str(cur_year-7)
+    y8_desc = str(cur_year-8)
+
+    for i,f in enumerate(fonds):
+        if f.update_flag == '1':
+            continue
+
+        _my_print(f"处理:{length}-{i}-{f.name}")
+        res = None
+        try:
+            res = _tt_do_search_fund_item(f.code)
+        except Exception as err:
+            _my_print(f"处理年化失败:{length}-{i}-{f.name}")
+            continue
+
+        f.total_money = res['规模']
+        f.manager = res['基金经理']
+        f.company = res['管理人']
+        f.establish_date = s_date_2_to_13_timestamp(res['成立日'])
+        f.establish_day = s_date_calc_since_totay(res['成立日'])
+        f.update_flag = '1'
+        # f.nh_cur = s_to_float(res[y0_desc])
+        f.nh_1 = s_to_float(res[y1_desc])
+        f.nh_2 = s_to_float(res[y2_desc])
+        f.nh_3 = s_to_float(res[y3_desc])
+        f.nh_4 = s_to_float(res[y4_desc])
+        f.nh_5 = s_to_float(res[y5_desc])
+        f.nh_6 = s_to_float(res[y6_desc])
+        f.nh_7 = s_to_float(res[y7_desc])
+        f.nh_8 = s_to_float(res[y8_desc])
+
+        res = None
+        try:
+            res = _tt_do_get_max_drawdown(f.code)
+        except Exception as err:
+            _my_print(f"处理回撤失败:{length}-{i}-{f.name}")
+            continue
+
+        f.hc_cur = s_to_float(res[y0_desc])
+        f.hc_1 = s_to_float(res[y1_desc])
+        f.hc_2 = s_to_float(res[y2_desc])
+        f.hc_3 = s_to_float(res[y3_desc])
+        f.hc_4 = s_to_float(res[y4_desc])
+        f.hc_5 = s_to_float(res[y5_desc])
+        f.hc_6 = s_to_float(res[y6_desc])
+        f.hc_7 = s_to_float(res[y7_desc])
+        f.hc_8 = res[y8_desc]
+        f.update_flag = '1'
+        sql_session.commit()     # 自动检测到变化
 
 if __name__ == '__main__':
-    
-
     pass

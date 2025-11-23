@@ -12,7 +12,7 @@ engine = create_engine('sqlite:///money.db')
 # 使用 sessionmaker 创建一个会话类 Session，并绑定到数据库引擎（bind=engine）
 _Session = sessionmaker(bind=engine)
 # 创建一个实例化的会话对象 session
-session = _Session()
+sql_session = _Session()
 
 
 ########## 
@@ -44,7 +44,7 @@ class BondFund(Base):
                 primary_key=True, autoincrement="auto")
  
     # 定义列：name，是字符串类型，最大长度为50
-    code = Column(String(50))
+    code = Column(String(50), unique=True)
     name = Column(String(50))
 
 # code	名称	近1周	近1月	近3月	近6月	近1年	近2年	近3年	今年来	成立来	可购买	起购金额	费率
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     # result = engine.execute('SELECT * FROM users')
     
     # 使用 ORM 查询接口
-    chenxings = session.query(Chenxing).all()
+    chenxings = sql_session.query(Chenxing).all()
 
     # for c in chenxings:
     #     print(c.code,c.name)

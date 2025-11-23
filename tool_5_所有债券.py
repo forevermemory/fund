@@ -143,13 +143,13 @@ def main():
     # out.to_csv("中债指数-结果.csv", index=False)
 
     # step read excel
-    df = pd.read_excel('bond_1.xlsx', sheet_name='输出', dtype=str)
+    df = pd.read_excel('bond_1.xlsx', dtype=str)
     df = df.fillna(0)
 
     datas = []
     num_rows = len(df)
 
-    from tools.sql import BondFund,session
+    from tools.sql import BondFund,sql_session
     from tools.tool import _tt_do_search_fund_item
 
 # code	名称	近1周	近1月	近3月	近6月	近1年	近2年	近3年	今年来	成立来	可购买	起购金额	费率
@@ -213,7 +213,7 @@ def main():
     #     session.commit()
         
 
-    fonds = session.query(BondFund).all()
+    fonds = sql_session.query(BondFund).all()
     length = len(fonds)
 
     cur_year = datetime.now().year
@@ -268,7 +268,7 @@ def main():
             f.hc_7 = s_to_float(res[y7_desc])
             f.hc_8 = res[y8_desc]
             f.update_flag = '2'
-            session.commit()     # 自动检测到变化
+            sql_session.commit()     # 自动检测到变化
         except Exception as err:
             print(err)
 

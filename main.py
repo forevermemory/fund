@@ -62,7 +62,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self._mythread_s_bondlist= mythread.MyThread_tt_do_get_bond_list()
         self._mythread_s_bondlist.on_out_text_signal.connect(self._print_txt)
 
-        self._mythread_s_bond_detail= mythread.MyThread_tt_do_get_bond_list()
+        self._mythread_s_bond_detail= mythread.MyThread_tt_do_get_bond_detail_nh_hc()
         self._mythread_s_bond_detail.on_out_text_signal.connect(self._print_txt)
         
 
@@ -160,7 +160,7 @@ class Window(QMainWindow, Ui_MainWindow):
         
     @pyqtSlot()
     def on_m_tt_btn_search_bond_clicked(self):
-        self._mythread_s_bondlist.set_params(self._get_today_dir(), '042')
+        self._mythread_s_bondlist.set_params(self._get_today_dir(), '')
         self._mythread_s_bondlist.start()
         
     @pyqtSlot()

@@ -1,49 +1,54 @@
 import requests
+import re
+import pandas as pd
 
+# 041 长期纯债
+# 042 短期纯债
+# 043 混合债
+# 044 定开
+# 045 可转债
+mapping = {
+    "041": "长期纯债",
+    "042": "短期纯债",
+    "043": "混合债",
+    "044": "定开债",
+    "071": "定开债",
+    "045": "可转债",
+}
 
-def get_cgb_10y_yield():
-    """获取中国10年期国债收益率（东方财富）"""
-    url = "https://push2.eastmoney.com/api/qt/stock/get"
-    params = {
-        "secid": "0.00338",   # 10年国债收益率指数
-        "fields": "f43"       # 收益率字段
-    }
-    r = requests.get(url, params=params).json()
-    print(r)
-    yield_val = r["data"]["f43"] / 10000    # 东方财富乘10000
-    return yield_val * 100                  # 转为百分比
+def repl_bond_fund_cate(m):
+    return mapping[m.group(0)]
 
+from openpyxl import load_workbook
 
-def get_index_pe_ratio():
-    """获取沪深300 PE（东方财富指数行情）"""
-    url = "https://push2.eastmoney.com/api/qt/stock/get"
-    params = {
-        "secid": "1.000300",  # 沪深300指数
-        "fields": "f162"      # 市盈率
-    }
-    r = requests.get(url, params=params).json()
-    pe = r["data"]["f162"]
-    return pe
+def read_excel_skip_hidden(filename, sheet_name='Sheet1'):
+    # 先用 openpyxl 打开
+    wb = load_workbook(filename, data_only=True)
+    ws = wb[sheet_name]
 
+    # 找出隐藏的行号（注意 Excel 行号从 1 开始）
+    hidden_rows = [
+        row for row, dim in ws.row_dimensions.items()
+        if dim.hidden
+    ]
 
-def graham_index(bond_yield_percent, pe_ratio):
-    equity_yield = 1 / pe_ratio * 100
-    return bond_yield_percent / equity_yield
+    # pandas 的 skiprows 从 0 开始，所以要 -1
+    skip = [r - 1 for r in hidden_rows]
+
+    # 正式读取
+    return pd.read_excel(filename,dtype=str, sheet_name=sheet_name, skiprows=skip)
 
 
 if __name__ == "__main__":
-    bond_yield = get_cgb_10y_yield()
-    pe = get_index_pe_ratio()
+    # df = pd.read_excel('/Users/liuqt/develop/money/datas/2025-11-21/bond_1.xlsx', dtype=str, sheet_name='Sheet3')
+    # f7
 
-    print(f"10年期国债收益率: {bond_yield:.2f}%")
-    print(f"沪深300 市盈率: {pe:.2f}")
+    # pattern = re.compile("|".join(mapping.keys()))
+    # df["f7"] = df["f7"].str.replace(pattern, repl_bond_fund_cate, regex=True)
 
-    g = graham_index(bond_yield, pe)
-    print(f"格雷厄姆指数: {g:.2f}")
+    # df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f9","e1","e2","e3"])
+    # df.to_excel(f"/Users/liuqt/develop/money/datas/2025-11-21/bond_2.xlsx", index=False)
 
-    if g > 1:
-        print("结论：股票相对偏贵")
-    elif g < 1:
-        print("结论：股票相对便宜")
-    else:
-        print("结论：股票估值大致合理")
+    # 使用方式
+    df = read_excel_skip_hidden("datas/2025-11-21/bond_1.xlsx",'Sheet3')
+    print(df)
