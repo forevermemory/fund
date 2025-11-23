@@ -75,6 +75,24 @@ class Window(QMainWindow, Ui_MainWindow):
     ########## 加载数据
     def _load_datas(self):
         self._load_data_zhongzhaizhishu()
+        self._load_data_tt_bond_fund_tp()
+    
+    def _load_data_tt_bond_fund_tp(self):
+        self.m_tt_bond_tp.setMaxVisibleItems(10)
+        self.m_tt_bond_tp.addItem('所有类型', '')
+        self.m_tt_bond_tp.addItem('长期纯债', '041')
+        self.m_tt_bond_tp.addItem('短期纯债', '042')
+        self.m_tt_bond_tp.addItem('混合债', '043')
+        self.m_tt_bond_tp.addItem('定开债', '044')
+        self.m_tt_bond_tp.addItem('定开债2', '071')
+        self.m_tt_bond_tp.addItem('可转债', '055')
+        # "041": "长期纯债",
+        # "042": "短期纯债",
+        # "043": "混合债",
+        # "044": "定开债",
+        # "071": "定开债",
+        # "045": "可转债",
+    
     def _load_data_zhongzhaizhishu(self):
 
         self.m_comb_zz_show_list.setMaxVisibleItems(30)
@@ -165,6 +183,11 @@ class Window(QMainWindow, Ui_MainWindow):
         
     @pyqtSlot()
     def on_m_tt_btn_search_bond2_clicked(self):
+        ft = self.m_tt_bond_tp.currentText()
+
+        print(ft,self.m_tt_bond_tp.currentData())
+        return
+
         self._mythread_s_bond_detail.set_params(self._get_today_dir())
         self._mythread_s_bond_detail.start()
 
