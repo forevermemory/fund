@@ -110,7 +110,7 @@ class MyThread_tt_do_get_bond_detail_nh_hc(QThread):
         _my_log_set(self)
 
 
-    def set_params(self, out_dir, fr):
+    def set_params(self, out_dir):
         self.out_dir = out_dir
         _my_log_set(self)
 

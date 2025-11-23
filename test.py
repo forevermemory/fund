@@ -2,6 +2,7 @@ import requests
 import re
 import pandas as pd
 
+
 # 041 长期纯债
 # 042 短期纯债
 # 043 混合债
@@ -50,5 +51,21 @@ if __name__ == "__main__":
     # df.to_excel(f"/Users/liuqt/develop/money/datas/2025-11-21/bond_2.xlsx", index=False)
 
     # 使用方式
-    df = read_excel_skip_hidden("datas/2025-11-21/bond_1.xlsx",'Sheet3')
+    # df = read_excel_skip_hidden("datas/2025-11-23/bond_1.xlsx",'Sheet1')
+    # print(df)
+
+    # new_values = []
+ 
+    # for index, row in df.iterrows():
+    #     code = row["code"]
+    #     name = row["名称"]
+    #     new_values.append('aaa')
+    # df["new_column"] = new_values
+
+    # df.to_excel("datas/2025-11-23/bond_2.xlsx", index=False)
+
+
+    ##
+    from tools.tool import sql_session
+    df = pd.read_sql(f'select * from bond_fund where code in ("021928")', sql_session.connection())
     print(df)

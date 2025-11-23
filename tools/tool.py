@@ -28,6 +28,9 @@ def s_to_float(s:str)->float:
     if type(s) == float:
         return s
 
+    if type(s) == int:
+        return float(s)
+
     s2 = s.replace('%','')
     try:
         v = float(s2)
@@ -672,7 +675,7 @@ def _calc_cur_bond_div_stock_stock()->float:
 
 
 
-def _get_page_bond_datas(page)->list:
+def _get_page_bond_datas(page, fr)->list:
     
     _url = 'https://fund.eastmoney.com/data/fundtradenewapi.aspx'
     params = {
@@ -685,7 +688,7 @@ def _get_page_bond_datas(page)->list:
         'ct': '',
         'cd': '',
         'ms': '',
-        'fr': '',
+        'fr': fr,
         'plevel':'',
         'fst': '',
         'ftype':'',
@@ -791,7 +794,7 @@ def __check_bond_list(out_dir:str, fr:str)->bool:
         
         try:
             _my_print(f'下载第{page}页')
-            datas = _get_page_bond_datas(page)
+            datas = _get_page_bond_datas(page, fr)
             for d in datas:
                 fp1.write(d)
                 fp1.write('\n')
@@ -810,6 +813,12 @@ def __check_bond_list(out_dir:str, fr:str)->bool:
 
     _my_print(f'下载完成')
     fp1.close()
+
+    df = pd.read_csv(fname2, dtype=str)
+    df = df.fillna(0)
+    fname = f"{out_dir}/bond_1.xlsx"
+    df.to_excel(fname, index=False)
+
     
     if has_excep:
         return False
@@ -926,8 +935,12 @@ def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
     df = pd.read_excel(fname,dtype=str, sheet_name=sheet_name, skiprows=skip)
     df = df.fillna(0)
 
-
+    # cache
     fonds = sql_session.query(BondFund).all()
+    fkv = {}
+    for f in fonds:
+        fkv[f.code] = f
+
     length = len(fonds)
 
     cur_year = datetime.now().year
@@ -941,16 +954,32 @@ def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
     y7_desc = str(cur_year-7)
     y8_desc = str(cur_year-8)
 
-    for i,f in enumerate(fonds):
+
+    num_rows = len(df)
+    length = num_rows
+
+    ### 添加上列
+    ids = []
+
+    for index, row in df.iterrows():
+        code = row["code"]
+        name = row["名称"]
+
+
+        f = fkv[code]
+        f: BondFund
+        ids.append(f.id)
+
         if f.update_flag == '1':
             continue
+        
 
-        _my_print(f"处理:{length}-{i}-{f.name}")
+        _my_print(f"处理:{length}-{index}-{f.name}")
         res = None
         try:
             res = _tt_do_search_fund_item(f.code)
         except Exception as err:
-            _my_print(f"处理年化失败:{length}-{i}-{f.name}")
+            _my_print(f"处理年化失败:{length}-{index}-{f.name}")
             continue
 
         f.total_money = res['规模']
@@ -973,7 +1002,7 @@ def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
         try:
             res = _tt_do_get_max_drawdown(f.code)
         except Exception as err:
-            _my_print(f"处理回撤失败:{length}-{i}-{f.name}")
+            _my_print(f"处理回撤失败:{length}-{index}-{f.name}")
             continue
 
         f.hc_cur = s_to_float(res[y0_desc])
@@ -987,6 +1016,38 @@ def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
         f.hc_8 = res[y8_desc]
         f.update_flag = '1'
         sql_session.commit()     # 自动检测到变化
+
+    ### 导出数据
+    _my_print(f"导出数据中...")
+    
+    _s = ''
+    for i in ids:
+        _s+=f'{i},'
+    _s+='0'
+    df = pd.read_sql(f'select * from bond_fund where id in ({_s})', sql_session.connection())
+
+    # 处理ABCDE
+    df['total_money'] = df['total_money'].astype(float)
+    df["base"] = df['name'].str.replace(r"[ABCDE]$", "", regex=True)
+    agg = df.groupby("base")['total_money'].sum().reset_index()
+    df_a = df[df['name'].str.endswith("A")].copy()
+    df_a = df_a.merge(agg, 
+                      on="base", 
+                      suffixes=("", "_合并"))
+    
+    # df_a.drop('base')
+
+    # 想移动的列
+    col = "total_money_合并"
+    cols = list(df_a.columns)
+    cols.insert(cols.index("total_money") + 1, col)
+    # 重排
+    df_a = df_a[cols[:-2]]
+
+    fname = f"{out_dir}/bond_2.xlsx"
+    df_a.to_excel(fname, index=False)
+
+# 13145195802
 
 if __name__ == '__main__':
     pass

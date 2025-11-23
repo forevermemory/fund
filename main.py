@@ -178,16 +178,14 @@ class Window(QMainWindow, Ui_MainWindow):
         
     @pyqtSlot()
     def on_m_tt_btn_search_bond_clicked(self):
-        self._mythread_s_bondlist.set_params(self._get_today_dir(), '')
+
+        ft = self.m_tt_bond_tp.currentData()
+        self._mythread_s_bondlist.set_params(self._get_today_dir(), ft)
         self._mythread_s_bondlist.start()
         
     @pyqtSlot()
     def on_m_tt_btn_search_bond2_clicked(self):
-        ft = self.m_tt_bond_tp.currentText()
-
-        print(ft,self.m_tt_bond_tp.currentData())
-        return
-
+        
         self._mythread_s_bond_detail.set_params(self._get_today_dir())
         self._mythread_s_bond_detail.start()
 
