@@ -133,7 +133,7 @@
        <string>bond2</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="comboBox">
+     <widget class="QComboBox" name="m_tt_bond_tp">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -185,7 +185,7 @@
      <x>0</x>
      <y>0</y>
      <width>571</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
