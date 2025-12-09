@@ -41,31 +41,10 @@ def read_excel_skip_hidden(filename, sheet_name='Sheet1'):
 
 
 if __name__ == "__main__":
-    # df = pd.read_excel('/Users/liuqt/develop/money/datas/2025-11-21/bond_1.xlsx', dtype=str, sheet_name='Sheet3')
-    # f7
+    from tools.tool import _tt_do_search_fund_item_fenhong
 
-    # pattern = re.compile("|".join(mapping.keys()))
-    # df["f7"] = df["f7"].str.replace(pattern, repl_bond_fund_cate, regex=True)
-
-    # df = df.drop(columns=["类型","日期","净值","日增长率", "f1", "f2", "f3", "f4", "f5", "f6", "f9","e1","e2","e3"])
-    # df.to_excel(f"/Users/liuqt/develop/money/datas/2025-11-21/bond_2.xlsx", index=False)
-
-    # 使用方式
-    # df = read_excel_skip_hidden("datas/2025-11-23/bond_1.xlsx",'Sheet1')
-    # print(df)
-
-    # new_values = []
- 
-    # for index, row in df.iterrows():
-    #     code = row["code"]
-    #     name = row["名称"]
-    #     new_values.append('aaa')
-    # df["new_column"] = new_values
-
-    # df.to_excel("datas/2025-11-23/bond_2.xlsx", index=False)
-
-
+    _tt_do_search_fund_item_fenhong('563900')
     ##
-    from tools.tool import sql_session
-    df = pd.read_sql(f'select * from bond_fund where code in ("021928")', sql_session.connection())
-    print(df)
+    # from tools.tool import sql_session
+    # df = pd.read_sql(f'select * from bond_fund where code in ("021928")', sql_session.connection())
+    # print(df)

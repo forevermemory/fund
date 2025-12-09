@@ -441,6 +441,69 @@ def _tt_do_search_fund_item(code: str)->dict:
     return data
 
 
+def _tt_do_search_fund_item_fenhong(code: str)->dict:
+    '''分红'''
+ 
+    _url = 'https://fundf10.eastmoney.com/fhsp_%s.html' % (code)
+    r = req_session.get(_url)
+    # 可能是后端，然后重定向
+
+    text = r.content.decode('utf8')
+
+    # fp = open('b.html', encoding='utf8')
+    # text = fp.read()
+    # fp.close()
+
+    # html = etree.HTML(text)
+
+    soup = BeautifulSoup(text, "lxml")
+    # part1
+    container_base = '#bodydiv > div:nth-child(13) > div.r_cont.right > div.detail > div.txt_cont > div > div:nth-child(2) > div > table > tbody > tr'
+    trs = soup.select(container_base)
+ 
+
+    tr1 = trs[0]
+    tds = tr1.select('td')
+    if len(tds) <=3:
+        data = {
+            '分红1': '无',
+            '分红2': '无',
+            '分红3': 0,
+        }
+        return data
+    
+    p1 = tds[1].text
+    p2 = tds[3].text.replace('每份派现金','')
+    data = {
+        '分红1': p1,
+        '分红2': p2,
+        '分红3': len(trs),
+    }
+
+    return data
+
+def _tt_do_search_fund_item_nianfei(code: str)->dict:
+    '''年费'''
+ 
+    _url = 'https://fundf10.eastmoney.com/jjfl_%s.html' % (code)
+    r = req_session.get(_url)
+    # 可能是后端，然后重定向
+
+    text = r.content.decode('utf8')
+ 
+    soup = BeautifulSoup(text, "lxml")
+    # part1
+    container_base = '#bodydiv > div:nth-child(12) > div.r_cont.right > div.detail > div.txt_cont > div > div:nth-child(4) > div > table > tbody > tr > td'
+    tds = soup.select(container_base)
+
+    data = {
+        '管理费率': tds[1].text,
+        '托管费率': tds[3].text,
+        '销售服务费率': tds[5].text,
+    }
+    return data
+
+
 def tt_do_search_zhishu_detail(_key: str,  out_dir: str):
     '''搜素指数基金详情'''
     fname = f"{out_dir}/{_key}.xlsx"
@@ -454,21 +517,43 @@ def tt_do_search_zhishu_detail(_key: str,  out_dir: str):
         code = row["CODE"]
         name = row["NAME"]
 
-        if index > 2:
-            break
+        # if index > 2:
+        #     break
 
+        r1 = {}
         try:
             r1 = _tt_do_search_fund_item(code)
             r1['名称'] = name
-            datas.append(r1)
+            s1 = f"处理basic完成:{num_rows}-{index+1}, {name}"
+            _my_print(s1)
+            print(s1)
+        except Exception as err:
+            s1 = f"处理basic失败-----:{code}, {name}, {err}"
+            _my_print(s1)
 
-            s1 = f"处理完成:{num_rows}-{index+1}, {name}"
+        try:
+            r2 = _tt_do_search_fund_item_fenhong(code)
+            r1.update(r2)
+            s1 = f"处理分红完成:{num_rows}-{index+1}, {name}"
             
             _my_print(s1)
             print(s1)
         except Exception as err:
-            s1 = f"处理失败-----:{code}, {name}"
+            s1 = f"处理分红失败-----:{code}, {name}, {err}"
             _my_print(s1)
+
+        try:
+            r2 = _tt_do_search_fund_item_nianfei(code)
+            r1.update(r2)
+            s1 = f"处理费率完成:{num_rows}-{index+1}, {name}"
+            
+            _my_print(s1)
+            print(s1)
+        except Exception as err:
+            s1 = f"处理费率失败-----:{code}, {name}, {err}"
+            _my_print(s1)
+
+        datas.append(r1)
 
     out = pd.DataFrame(datas)
     out.to_excel(f"{out_dir}/{_key}-详情.xlsx", index=False)
