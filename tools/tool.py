@@ -179,6 +179,11 @@ def get_year_month_day() -> str:
     return f"{now.year}-{now.month}-{now.day}"
 
 
+__fund_list = []
+
+def tt_do_search_zhishu_cache()->list:
+    return __fund_list
+
 def tt_do_search_zhishu(key: str, out_dir: str):
     now = str(int(time.time() * 1000))
     params = {
@@ -240,6 +245,9 @@ def tt_do_search_zhishu(key: str, out_dir: str):
 
     _my_print("write data")
     out = pd.DataFrame(items)
+
+    global __fund_list
+    __fund_list = items
 
     out.to_excel(f"{out_dir}/{key}.xlsx", index=False)
     out.to_csv(f"{out_dir}/{key}.csv", index=False)

@@ -12,7 +12,7 @@ from tools import mylog
 from tools import sql   
 import threading
 import os
-
+import pandas as pd
 
 
 
@@ -134,6 +134,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self._mythread_s_list.set_params(_key, self._get_today_dir())
         self._mythread_s_list.start()
+
+        funds = tool.tt_do_search_zhishu_cache()
+        print(funds)
+        #  {'_id': '019548', 'CODE': '019548', 'NAME': '招商纳斯达克100ETF发起式联接(QDII)C', 'STOCKMARKET': '', 'NEWTEXCH': ''}
+
+        self.m_tt_funds
 
 
     @pyqtSlot()
