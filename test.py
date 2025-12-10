@@ -43,8 +43,21 @@ def read_excel_skip_hidden(filename, sheet_name='Sheet1'):
 if __name__ == "__main__":
     from tools.tool import _tt_do_search_fund_item_fenhong
 
-    _tt_do_search_fund_item_fenhong('563900')
+    # _tt_do_search_fund_item_fenhong('563900')
     ##
     # from tools.tool import sql_session
     # df = pd.read_sql(f'select * from bond_fund where code in ("021928")', sql_session.connection())
     # print(df)
+    
+    d1 = {
+        'a':1,
+        'a2':2,
+    }
+    
+    d2 = {
+        'a2':3,
+        'd':4,
+    }
+    
+    d1.update(d2)
+    print(d1)

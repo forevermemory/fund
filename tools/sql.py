@@ -8,6 +8,10 @@ from sqlalchemy import Column, Integer, String, Sequence,FLOAT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+def get_year_month_day() -> str:
+    now = datetime.now()
+    return f"{now.year}-{now.month}-{now.day}"
+
 engine = create_engine('sqlite:///money.db')
 # 使用 sessionmaker 创建一个会话类 Session，并绑定到数据库引擎（bind=engine）
 _Session = sessionmaker(bind=engine)
@@ -105,6 +109,81 @@ class BondFund(Base):
 
     # # 定义列：age，是整数类型
     # age = Column(Integer)
+
+class Fund(Base):
+    __tablename__ = 'fund'
+ 
+    id = Column(Integer, Sequence('id_seq'), 
+                primary_key=True, autoincrement="auto")
+ 
+    # 定义列：name，是字符串类型，最大长度为50
+    code = Column(String(50), unique=True)
+    name = Column(String(50))
+
+    # code	名称	近1周	近1月	近3月	近6月	近1年	近2年	近3年	今年来	成立来	可购买	起购金额	费率
+    near_1w = Column(FLOAT)
+    near_1m = Column(FLOAT)
+    near_3m = Column(FLOAT)
+    near_6m = Column(FLOAT)
+    near_1y = Column(FLOAT)
+    near_2y = Column(FLOAT)
+    near_3y = Column(FLOAT)
+    near_now_y = Column(FLOAT)
+    near_all_y = Column(FLOAT)
+    buy_rate = Column(FLOAT) # 
+
+    update_flag = Column(String(50)) # date
+
+    establish_date = Column(Integer) # 成立日
+    establish_day = Column(Integer) # 成立日
+    total_money = Column(Integer) # 规模
+    company = Column(String(50)) # 管理人
+    manager = Column(String(50)) # 基金经理
+    nh_deviation = Column(String(50)) # 年化跟踪误差
+    bd = Column(String(50)) # 跟踪标的
+    trade_status = Column(String(50)) # 交易状态
+
+    # 年化收益
+    nh_cur = Column(FLOAT) 
+    nh_1 = Column(FLOAT) 
+    nh_2 = Column(FLOAT) 
+    nh_3 = Column(FLOAT) 
+    nh_4 = Column(FLOAT) 
+    nh_5 = Column(FLOAT) 
+    nh_6 = Column(FLOAT) 
+    nh_7 = Column(FLOAT) 
+    nh_8 = Column(FLOAT) 
+
+    # 最大回撤
+    hc_cur = Column(FLOAT) 
+    hc_1 = Column(FLOAT) 
+    hc_2 = Column(FLOAT) 
+    hc_3 = Column(FLOAT) 
+    hc_4 = Column(FLOAT) 
+    hc_5 = Column(FLOAT) 
+    hc_6 = Column(FLOAT) 
+    hc_7 = Column(FLOAT) 
+    hc_8 = Column(FLOAT) 
+
+    # 近三年
+    # standard deviation
+    std_1 = Column(FLOAT) 
+    std_2 = Column(FLOAT) 
+    std_3 = Column(FLOAT) 
+
+    # Sharpe Ratio
+    sharpe_1 = Column(FLOAT) 
+    sharpe_2 = Column(FLOAT) 
+    sharpe_3 = Column(FLOAT) 
+
+    feiyong1 = Column(String(50)) 
+    feiyong2 = Column(String(50)) 
+    
+    fenhong1 = Column(String(50)) 
+    fenhong2 = Column(String(50)) 
+    fenhong3 = Column(String(50)) 
+
+
 
 
 ### 添加

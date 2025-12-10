@@ -16,6 +16,72 @@ from PyQt5.Qt import *
 req_session = requests.Session()
 
 from tools.mylog import _my_print as mylog__mxxxxx
+from tools.param import Param
+
+from tools.sql import Fund
+
+cur_year = datetime.now().year
+y0_desc = str(cur_year)
+y1_desc = str(cur_year-1)
+y2_desc = str(cur_year-2)
+y3_desc = str(cur_year-3)
+y4_desc = str(cur_year-4)
+y5_desc = str(cur_year-5)
+y6_desc = str(cur_year-6)
+y7_desc = str(cur_year-7)
+y8_desc = str(cur_year-8)
+
+name_kv = {
+    'name': '名称',
+    'near_1w': '近1周',
+    'near_1m': '近1月',
+    'near_3m': '近3月',
+    'near_6m': '近6月',
+    'near_1y': '近1年',
+    'near_2y': '近2年',
+    'near_3y': '近3年',
+    'near_now_y': '今年来',
+    'near_all_y': '成立来',
+    'buy_rate': '购买费率',
+    'update_flag': 'update_flag',
+    'establish_date': '成立日',
+    'establish_day': '成立天',
+    'total_money': '规模',
+    'company': '管理人',
+    'manager': '基金经理',
+    'nh_deviation': '年化跟踪误差',
+    'bd': '跟踪标的',
+    'trade_status': '申购状态',
+    'nh_cur': '年化',
+    'nh_1': f'{y1_desc}',
+    'nh_2': f'{y2_desc}',
+    'nh_3': f'{y3_desc}',
+    'nh_4': f'{y4_desc}',
+    'nh_5': f'{y5_desc}',
+    'nh_6': f'{y6_desc}',
+    'nh_7': f'{y7_desc}',
+    'nh_8': f'{y8_desc}',
+    'hc_cur': '回撤',
+    'hc_1': f'{y1_desc}',
+    'hc_2': f'{y2_desc}',
+    'hc_3': f'{y3_desc}',
+    'hc_4': f'{y4_desc}',
+    'hc_5': f'{y5_desc}',
+    'hc_6': f'{y6_desc}',
+    'hc_7': f'{y7_desc}',
+    'hc_8': f'{y8_desc}',
+    'std_1': '标准差1',
+    'std_2': '标准差2',
+    'std_3': '标准差3',
+    'sharpe_1': '夏普比1',
+    'sharpe_2': '夏普比2',
+    'sharpe_3': '夏普比3',
+    'feiyong1': '管理费率',
+    'feiyong2': '托管费率',
+    'fenhong1': '分红1',
+    'fenhong2': '分红2',
+    'fenhong3': '分红3',
+}
 
 
 def s_to_float(s:str)->float:
@@ -184,7 +250,10 @@ __fund_list = []
 def tt_do_search_zhishu_cache()->list:
     return __fund_list
 
-def tt_do_search_zhishu(key: str, out_dir: str):
+def tt_do_search_zhishu(param:Param):
+    # key: str, out_dir: str
+    key = param._key
+    out_dir = param.out_dir
     now = str(int(time.time() * 1000))
     params = {
         'callback': 'jQuery18308932037864680957_1762998769877',
@@ -249,11 +318,11 @@ def tt_do_search_zhishu(key: str, out_dir: str):
     global __fund_list
     __fund_list = items
 
-    out.to_excel(f"{out_dir}/{key}.xlsx", index=False)
-    out.to_csv(f"{out_dir}/{key}.csv", index=False)
+    out.to_excel(f"{out_dir}/{key}_all.xlsx", index=False)
+    # out.to_csv(f"{out_dir}/{key}_1.csv", index=False)
 
 
-def _tt_do_search_fund_item(code: str)->dict:
+def _tt_do_search_fund_item(code: str, b:Fund = None)->dict:
     now = str(int(time.time() * 1000))
 
     _url = 'https://fund.eastmoney.com/%s.html' % (code)
@@ -318,7 +387,7 @@ def _tt_do_search_fund_item(code: str)->dict:
             '近2年': '',
             '近3年': '',
             '成立来': '',
-             y1_desc: '',
+            y1_desc: '',
             y2_desc: '',
             y3_desc: '',
             y4_desc: '',
@@ -444,12 +513,23 @@ def _tt_do_search_fund_item(code: str)->dict:
         y7_desc: y7,
         y8_desc: y8,
     }
+    
+    if b:
+        b.nh_cur = 0.0 
+        b.nh_1 = s_to_float(y1)
+        b.nh_2 = s_to_float(y2)
+        b.nh_3 = s_to_float(y3)
+        b.nh_4 = s_to_float(y4)
+        b.nh_5 = s_to_float(y5)
+        b.nh_6 = s_to_float(y6)
+        b.nh_7 = s_to_float(y7)
+        b.nh_8 = s_to_float(y8)
 
     # print(data)
     return data
 
 
-def _tt_do_search_fund_item_fenhong(code: str)->dict:
+def _tt_do_search_fund_item_fenhong(code: str, b:Fund = None)->dict:
     '''分红'''
  
     _url = 'https://fundf10.eastmoney.com/fhsp_%s.html' % (code)
@@ -478,6 +558,7 @@ def _tt_do_search_fund_item_fenhong(code: str)->dict:
             '分红2': '无',
             '分红3': 0,
         }
+
         return data
     
     p1 = tds[1].text
@@ -487,10 +568,16 @@ def _tt_do_search_fund_item_fenhong(code: str)->dict:
         '分红2': p2,
         '分红3': len(trs),
     }
+    
+    if b:
+        b.fenhong1 = p1
+        b.fenhong2 = p2
+        b.fenhong3 = len(trs)
+
 
     return data
 
-def _tt_do_search_fund_item_nianfei(code: str)->dict:
+def _tt_do_search_fund_item_nianfei(code: str, b:Fund = None)->dict:
     '''年费'''
  
     _url = 'https://fundf10.eastmoney.com/jjfl_%s.html' % (code)
@@ -505,74 +592,16 @@ def _tt_do_search_fund_item_nianfei(code: str)->dict:
     tds = soup.select(container_base)
 
     data = {
-        '管理费率': tds[1].text,
-        '托管费率': tds[3].text,
-        '销售服务费率': tds[5].text,
+        '管理费率': tds[1].text.replace('（每年）',''),
+        '托管费率': tds[3].text.replace('（每年）',''),
     }
+    if b:
+        b.feiyong1 = data['管理费率']
+        b.feiyong2 = data['托管费率']
     return data
 
 
-def tt_do_search_zhishu_detail(_key: str,  out_dir: str):
-    '''搜素指数基金详情'''
-    fname = f"{out_dir}/{_key}.xlsx"
-
-    df = pd.read_excel(fname, dtype=str)
-
-    datas = []
-    num_rows = len(df)
-
-    for index, row in df.iterrows():
-        code = row["CODE"]
-        name = row["NAME"]
-
-        # if index > 2:
-        #     break
-
-        r1 = {}
-        try:
-            r1 = _tt_do_search_fund_item(code)
-            r1['名称'] = name
-            s1 = f"处理basic完成:{num_rows}-{index+1}, {name}"
-            _my_print(s1)
-            print(s1)
-        except Exception as err:
-            s1 = f"处理basic失败-----:{code}, {name}, {err}"
-            _my_print(s1)
-
-        try:
-            r2 = _tt_do_search_fund_item_fenhong(code)
-            r1.update(r2)
-            s1 = f"处理分红完成:{num_rows}-{index+1}, {name}"
-            
-            _my_print(s1)
-            print(s1)
-        except Exception as err:
-            s1 = f"处理分红失败-----:{code}, {name}, {err}"
-            _my_print(s1)
-
-        try:
-            r2 = _tt_do_search_fund_item_nianfei(code)
-            r1.update(r2)
-            s1 = f"处理费率完成:{num_rows}-{index+1}, {name}"
-            
-            _my_print(s1)
-            print(s1)
-        except Exception as err:
-            s1 = f"处理费率失败-----:{code}, {name}, {err}"
-            _my_print(s1)
-
-        datas.append(r1)
-
-    out = pd.DataFrame(datas)
-    out.to_excel(f"{out_dir}/{_key}-详情.xlsx", index=False)
-    out.to_csv(f"{out_dir}/{_key}-详情.csv", index=False)
-
-
-
-
-
-
-def _tt_do_get_max_drawdown(code:str) -> dict:
+def _tt_do__max_drawdown(code:str, b: Fund = None) -> dict:
     '''获取某一只的年度最大回撤'''
     now = datetime.now()
     now_str = f'{now.year}{now.month}{now.day}{now.hour}{now.minute}{now.second}'
@@ -586,6 +615,7 @@ def _tt_do_get_max_drawdown(code:str) -> dict:
     pattern = r"Data_ACWorthTrend\s*=\s*(\[\s*[\s\S]*?\s*\])\s*;"
     match = re.search(pattern, js_source, re.S)
     if not match:
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!",js_source)
         return None
     array_str = match.group(1)
     
@@ -607,7 +637,6 @@ def _tt_do_get_max_drawdown(code:str) -> dict:
         
         groups[dt.year].append((ts_ms, value))
         
-
 
     y1_desc = str(cur_year-1)
     y2_desc = str(cur_year-2)
@@ -642,44 +671,217 @@ def _tt_do_get_max_drawdown(code:str) -> dict:
         g_length = len(items)
         
         huiches = []
+        try:
         
-        for i in range(2, g_length):
-            dt = items[i][0]
-            value = items[i][1]
-            _max = 0
+            for i in range(2, g_length):
+                dt = items[i][0]
+                value = items[i][1]
+                if value == None:
+                    value = 0
+                _max = 0
 
-            for index,item in enumerate(items[:i]):
-                dt2 = item[0]
-                value2 = item[1]
-                # 向左边找到最大值
-                if value2 > _max:
-                    _max = value2
-                    _max_date = dt2
+                for index,item in enumerate(items[:i]):
+                    dt2 = item[0]
+                    value2 = item[1]
+                    if value2 == None:
+                        value2=0
+                    # 向左边找到最大值
+                    if value2 > _max:
+                        _max = value2
+                        _max_date = dt2
 
-            # _max
-            # print(f"min: {_min}, _min_date: {datetime.datetime.fromtimestamp(_min_date / 1000).date()}, ")
-            
-            huiches.append({
-                'dt':dt,
-                'dt2':datetime.fromtimestamp(dt / 1000).date(),
-                'value':value,
-                '_max':_max,
-                '_max_date':_max_date,
-                '_max_date2':datetime.fromtimestamp(_max_date / 1000).date(),
-                'h':(_max-value)/_max*100,
-            })
+                # _max
+                # print(f"min: {_min}, _min_date: {datetime.fromtimestamp(_min_date / 1000).date()}, ")
+                value = float(value)
+                huiches.append({
+                    'dt':dt,
+                    'dt2':datetime.fromtimestamp(dt / 1000).date(),
+                    'value':value,
+                    '_max':_max,
+                    '_max_date':_max_date,
+                    '_max_date2':datetime.fromtimestamp(_max_date / 1000).date(),
+                    'h':(_max-value)/_max*100,
+                })
 
-        huiches.sort(key=lambda x: x['h'], reverse=True)
-        hc = huiches[0]
-        # print(f"=== {year}:{hc['h']}， {hc['_max_date2']}， {hc['dt2']}===")
-
-        drawdown[str(year)] = hc['h']
+            huiches.sort(key=lambda x: x['h'], reverse=True)
+            hc = huiches[0]
+            # print(f"=== {year}:{hc['h']}， {hc['_max_date2']}， {hc['dt2']}===")
+            drawdown[str(year)] = hc['h']
+        except Exception as err:
+            print("!!!!",year,_max,_max_date,value,dt,g_length, err)
     # print(huiche)
     # {'2025': 9.031262060980314, '2024': 10.648918469217962, '2023': 16.27029067572669, '2022': 23.124999999999996, '2021': 13.413242009132425, '2020': 13.615384615384619, '2019': 11.470240441466297, '2018': 25.618576322801673, '2017': 5.298536971134832, '2013': 8.029878618113909, '2014': 8.596837944664028, '2015': 42.600896860986545, '2016': 19.94428969359331}
-    
-    # print("------")
+    if b:
+        b.hc_1 = s_to_float(drawdown[y1_desc])
+        b.hc_2 = s_to_float(drawdown[y2_desc])
+        b.hc_3 = s_to_float(drawdown[y3_desc])
+        b.hc_4 = s_to_float(drawdown[y4_desc])
+        b.hc_5 = s_to_float(drawdown[y5_desc])
+        b.hc_6 = s_to_float(drawdown[y6_desc])
+        b.hc_7 = s_to_float(drawdown[y7_desc])
+        b.hc_8 = s_to_float(drawdown[y8_desc])
+        
     # print(drawdown)
     return drawdown
+
+
+def tt_do_search_zhishu_detail(param:Param):
+    '''搜素指数基金详情'''
+    
+    _key = param._key
+    out_dir = param.out_dir
+    enable_fenhong = param.enable_fenhong
+    enable_nianfei = param.enable_nianfei
+    enable_huiche = param.enable_huiche
+    fname = f"{out_dir}/{_key}.xlsx"
+
+    df = pd.read_excel(fname, dtype=str)
+
+    datas = []
+    num_rows = len(df)
+    
+    today_str = get_year_month_day()
+
+    for index, row in df.iterrows():
+        code = row["CODE"]
+        datas.append(code)
+
+        name = row["NAME"]
+
+        # check is exist
+        is_exist = False
+        b = sql_session.query(Fund).filter_by(code=code).first()
+        if b:
+            is_exist = True
+            if b.update_flag == today_str:
+                continue
+        else:
+            b = Fund()
+
+        b.update_flag = today_str
+ 
+        res = {
+
+        }
+        try:
+            r1 = _tt_do_search_fund_item(code, b)
+            r1['名称'] = name
+            res.update(r1)
+            s1 = f"处理basic完成:{num_rows}-{index+1}, {name}"
+            _my_print(s1)
+ 
+        except Exception as err:
+            s1 = f"处理basic失败-----:{code}, {name}, {err}"
+            _my_print(s1)
+
+        res.update({
+            '分红1': '无',
+            '分红2': '无',
+            '分红3': 0, 
+        })
+
+        b.fenhong1 = '无'
+        b.fenhong2 = '无'
+        b.fenhong3 = '0'
+        
+        if enable_fenhong:
+            try:
+                r2 = _tt_do_search_fund_item_fenhong(code, b)
+                res.update(r2)
+                s1 = f"处理分红完成:{num_rows}-{index+1}, {name}"
+                _my_print(s1)
+ 
+            except Exception as err:
+                s1 = f"处理分红失败-----:{code}, {name}, {err}"
+                _my_print(s1)
+
+        res.update({
+            '管理费率': '0',
+            '托管费率': '0'
+        })
+        b.feiyong1 = '0'
+        b.feiyong2 = '0'
+        if enable_nianfei:
+            try:
+                r3 = _tt_do_search_fund_item_nianfei(code, b)
+                res.update(r3)
+                s1 = f"处理费率完成:{num_rows}-{index+1}, {name}"
+                _my_print(s1)
+   
+            except Exception as err:
+                s1 = f"处理费率失败-----:{code}, {name}, {err}"
+                _my_print(s1)
+                
+        if enable_huiche:
+            try:
+                r3 = _tt_do__max_drawdown(code, b)
+                res.update(r3)
+                s1 = f"处理回撤完成:{num_rows}-{index+1}, {name}"
+                _my_print(s1)
+   
+            except Exception as err:
+                s1 = f"处理回撤失败-----:{code}, {name}, {err}"
+                _my_print(s1)
+
+        
+        ### to db 
+        b.code = code
+        b.name = name
+
+        b.near_1w = s_to_float(res["近1周"])
+        b.near_1m = s_to_float(res["近1月"])
+        b.near_3m = s_to_float(res["近3月"])
+        b.near_6m = s_to_float(res["近6月"])
+        b.near_1y = s_to_float(res["近1年"])
+        b.near_2y = s_to_float(res["近2年"])
+        b.near_3y = s_to_float(res["近3年"])
+        b.near_now_y = s_to_float(res["今年来"])
+        b.near_all_y = s_to_float(res["成立来"])
+        b.buy_rate = 0.0
+        b.update_flag = today_str
+
+        b.establish_date = res["成立日"]
+        b.establish_day = s_date_calc_since_totay(res['成立日'])
+        b.total_money =res["规模"]
+        b.company = res["管理人"]
+        b.manager = res["基金经理"]
+        b.nh_deviation = res["年化跟踪误差"]
+        b.bd = res["跟踪标的"]
+        b.trade_status = res["交易状态"]
+
+        # 年化收益
+        b.nh_cur = 0.0 
+        # 最大回撤
+        b.hc_cur = 0.0 
+
+
+        # 近三年
+        # standard deviation
+        b.std_1 = 0.0
+        b.std_2 = 0.0
+        b.std_3 = 0.0
+
+        # Sharpe Ratio
+        b.sharpe_1 = 0.0
+        b.sharpe_2 = 0.0
+        b.sharpe_3 = 0.0
+        
+        if not is_exist:
+            sql_session.add(b)
+        sql_session.commit()
+    
+    _s = ''
+    for i in datas:
+        _s+=f'{i},'
+    _s+='0'
+    outs = pd.read_sql(f'select * from fund where code in ({_s})', sql_session.connection())
+    out = pd.DataFrame(outs)
+    
+    # 设置列
+    global name_kv
+    out2=out.rename(columns=name_kv)
+    out2.to_excel(f"{out_dir}/{_key}-详情.xlsx", index=False)
+
 
 
 def tt_do_get_max_drawdown(_key:str, out_dir: str):
@@ -694,28 +896,28 @@ def tt_do_get_max_drawdown(_key:str, out_dir: str):
         code = row["代码"]
         name = row["名称"]
 
+        r2 = {}
+        d1 = row.to_dict()
+
         try:
-            r = _tt_do_get_max_drawdown(code)
+            r = _tt_do__max_drawdown(code)
             s1 = f"处理完成:{num_rows}-{index+1}, {name}"
             _my_print(s1)
             
-            d1 = row.to_dict()
-  
-            r2 = {}
+            print(r)
             for k in r:
                 r2[k+'回撤'] = r[k]
-            
-             
-            d1.update(r2)
-            
-            datas.append(d1)
+
         except Exception as err:
             s1 = f"处理失败-----:{code}, {name}{err}"
             _my_print(s1)
 
+        d1.update(r2)
+        datas.append(d1)
+
     out = pd.DataFrame(datas)
     out.to_excel(f"{out_dir}/{_key}-详情-回撤.xlsx", index=False)
-    out.to_csv(f"{out_dir}/{_key}-详情-回撤.csv", index=False)
+    # out.to_csv(f"{out_dir}/{_key}-详情-回撤.csv", index=False)
 
 
 def _calc_cur_bond_div_stock_bond()->float:
@@ -1093,7 +1295,7 @@ def tt_do_get_bond_fund_detail_nh_hc(out_dir:str):
 
         res = None
         try:
-            res = _tt_do_get_max_drawdown(f.code)
+            res = _tt_do__max_drawdown(f.code)
         except Exception as err:
             _my_print(f"处理回撤失败:{length}-{index}-{f.name}")
             continue

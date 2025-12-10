@@ -4,6 +4,7 @@ import time
 from mainwindow import Ui_MainWindow
 
 from PyQt5.Qt import *
+from PyQt5.QtGui import QIcon
 
 
 from tools import tool
@@ -12,8 +13,10 @@ from tools import mylog
 from tools import sql   
 import threading
 import os
+import platform
+import subprocess
 import pandas as pd
-
+from tools.param import Param
 
 
 
@@ -32,7 +35,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.init_ui()  # 界面绘制交给InitUi方法
 
         # tool.log_init(self.m_log)
-        self.m_tt_input_zhishu_name.setText('沪深300')
+        self.m_tt_input_zhishu_name.setText('纳斯达克')
 
         self._print_txt('晨星数据加载中')
         # sql.cx_data_init()
@@ -50,20 +53,24 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # 线程
         # 搜索指数列表
+        self._mythread_s_list= mythread.MyThread_tt_do_search_zhishu_list()
+        self._mythread_s_list.on_out_text_signal.connect(self._print_txt)
+        
         self._mythread_s_detail= mythread.MyThread_tt_do_search_zhishu_detail()
         self._mythread_s_detail.on_out_text_signal.connect(self._print_txt)
         
         self._mythread_get_max_drawdown= mythread.MyThread_tt_do_get_max_drawdown()
         self._mythread_get_max_drawdown.on_out_text_signal.connect(self._print_txt)
 
-        self._mythread_s_list= mythread.MyThread_tt_do_search_zhishu_list()
-        self._mythread_s_list.on_out_text_signal.connect(self._print_txt)
+
         
         self._mythread_s_bondlist= mythread.MyThread_tt_do_get_bond_list()
         self._mythread_s_bondlist.on_out_text_signal.connect(self._print_txt)
 
         self._mythread_s_bond_detail= mythread.MyThread_tt_do_get_bond_detail_nh_hc()
         self._mythread_s_bond_detail.on_out_text_signal.connect(self._print_txt)
+
+        self.m_tt_funds.cellClicked.connect(self._table_item_click)
         
 
     def _get_today_dir(self)->str:
@@ -71,12 +78,35 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def _print_txt(self, s):
         self.m_log.append(s)
-        
+
+    def _table_item_click(self, row, col):
+        self.m_log.append(f'{row}-{col}')
+        if col == 0:
+            self.m_tt_funds.removeRow(row)
+        self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
+
     ########## 加载数据
     def _load_datas(self):
         self._load_data_zhongzhaizhishu()
         self._load_data_tt_bond_fund_tp()
-    
+
+
+        self.m_tt_funds.setHorizontalHeaderItem(0, QTableWidgetItem('移除'))
+        self.m_tt_funds.setHorizontalHeaderItem(1, QTableWidgetItem('代码'))
+        self.m_tt_funds.setHorizontalHeaderItem(2, QTableWidgetItem('名称'))
+        self.m_tt_funds.setColumnWidth(0, 40)
+        self.m_tt_funds.setColumnWidth(1, 80)
+        self.m_tt_funds.setColumnWidth(2, 360)
+        self.m_tt_funds.verticalHeader().setVisible(False)
+
+        self.m_tt_fund_info.setText(f"累计:0")
+
+        self.m_tt_ck_nianfei.setChecked(True)
+        self.m_tt_ck_huiche.setChecked(True)
+        self.m_tt_ck_fenhong.setChecked(True)
+
+
+
     def _load_data_tt_bond_fund_tp(self):
         self.m_tt_bond_tp.setMaxVisibleItems(10)
         self.m_tt_bond_tp.addItem('所有类型', '')
@@ -110,10 +140,54 @@ class Window(QMainWindow, Ui_MainWindow):
 
     ################### 信号
 
-    def _th_do_search_zhishu(self, _key):
-        tool.tt_do_search_zhishu(_key, self._get_today_dir())
+    def _th_do_search_zhishu(self, param):
+        tool.tt_do_search_zhishu(param)
         self._print_txt('搜索结束，共搜索到%d条结果' % 1)
         self._print_txt('如需要进一步获取详情，请点击获取详情按钮')
+
+
+    @pyqtSlot()
+    def on_m_tt_btn_opendir_clicked(self):
+        folder_path = self._get_today_dir()
+        abs_path = os.path.join('.', folder_path)
+        print(abs_path)
+        if platform.system() == 'Windows':
+            os.startfile(abs_path)
+        else:
+            subprocess.run(['open', abs_path])
+            
+    @pyqtSlot()
+    def on_m_tt_btn_fund_cond_clicked(self):
+        cond = self.m_tt_fund_cond.text()
+        if cond == '':
+            return
+
+        tmp = []
+        total = self.m_tt_funds.rowCount()
+        for i in range(total):
+            txt = self.m_tt_funds.item(i, 2).text()
+            if txt.find(cond) == -1:
+                continue
+            tmp.append(i)
+
+        # update
+        tmp2 = list(reversed(tmp))
+        for i in tmp2:
+            self.m_tt_funds.removeRow(i)
+        self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
+
+        ##### to excel
+        tmp = []
+        total = self.m_tt_funds.rowCount()
+        for i in range(total):
+            code = self.m_tt_funds.item(i, 1).text()
+            name = self.m_tt_funds.item(i, 2).text()
+            tmp.append({'CODE': code, 'NAME': name})
+
+        df = pd.DataFrame(tmp)
+        _key = self.m_tt_input_zhishu_name.text()
+        df.to_excel(f"{self._get_today_dir()}/{_key}.xlsx", index=False)
+        
 
     @pyqtSlot()
     def on_m_tt_btn_search_zhishu_clicked(self):
@@ -123,24 +197,43 @@ class Window(QMainWindow, Ui_MainWindow):
             self._print_txt('请正确输入文本')
             return
 
+        funds = []
         # 当日是否搜索过
-        if tool.check_file_is_exist(self._get_today_dir() + "/" + f"{_key}.xlsx"):
+        fname = self._get_today_dir() + "/" + f"{_key}_all.xlsx"
+        if tool.check_file_is_exist(fname):
             self._print_txt('今日已经搜素过')
-            return
+            f1 = pd.read_excel(fname, dtype=str)
+            for index, row in f1.iterrows():
+                funds.append({'_id':row["_id"], 'NAME':row["NAME"]})
 
-        self._print_txt('正在搜索中....')
-        # thread start
-        self._th_do_search_zhishu(_key)
+        else:
+            param = Param(_key, self._get_today_dir())
+            self._print_txt('正在搜索中....')
+            self._th_do_search_zhishu(param)
 
-        self._mythread_s_list.set_params(_key, self._get_today_dir())
-        self._mythread_s_list.start()
+            # param = Param(_key, self._get_today_dir())
+            # self._mythread_s_list.set_params(param)
+            # self._mythread_s_list.start()
 
-        funds = tool.tt_do_search_zhishu_cache()
-        print(funds)
-        #  {'_id': '019548', 'CODE': '019548', 'NAME': '招商纳斯达克100ETF发起式联接(QDII)C', 'STOCKMARKET': '', 'NEWTEXCH': ''}
+            funds = tool.tt_do_search_zhishu_cache()
+        # # print(funds)
 
-        self.m_tt_funds
+        # self.m_tt_funds.clear()
+        self.m_tt_funds.setRowCount(0)
 
+        for i,item in enumerate(funds):
+            cur = self.m_tt_funds.rowCount()
+
+            self.m_tt_funds.insertRow(cur)
+            self.m_tt_funds.setItem(cur, 0, QTableWidgetItem('X'))
+
+            v2 = QTableWidgetItem(item['_id'])
+            self.m_tt_funds.setItem(cur, 1, v2)
+
+            v3 = QTableWidgetItem(item['NAME'])
+            self.m_tt_funds.setItem(cur, 2, v3)
+
+        self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
 
     @pyqtSlot()
     def on_m_tt_btn_search_detail_clicked(self):
@@ -151,13 +244,18 @@ class Window(QMainWindow, Ui_MainWindow):
             self._print_txt('请正确输入文本')
             return
 
-        self._mythread_s_detail.set_params(_key, self._get_today_dir())
+        #####
+
+        enable_nianfei = self.m_tt_ck_nianfei.isChecked()
+        enable_fenhong = self.m_tt_ck_fenhong.isChecked()
+        enable_huiche = self.m_tt_ck_huiche.isChecked()
+        param = Param(_key, self._get_today_dir(), enable_nianfei, enable_fenhong, enable_huiche)
+        self._mythread_s_detail.set_params(param)
         self._mythread_s_detail.start()
 
     @pyqtSlot()
     def on_m_tt_btn_search_drawdown_clicked(self):
-        print("=============")
- 
+
         _key = self.m_tt_input_zhishu_name.text()
 
         if _key == '':
@@ -167,8 +265,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self._mythread_get_max_drawdown.set_params(_key, self._get_today_dir())
         self._mythread_get_max_drawdown.start()
 
-        print("============222=")
-        
+
     @pyqtSlot()
     def on_m_info_bond_div_stock_clicked(self):
         self._print_txt('正在查询,请勿操作...')
