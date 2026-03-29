@@ -5,19 +5,17 @@ from mainwindow import Ui_MainWindow
 
 from PyQt5.Qt import *
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QThreadPool, QThread, Qt, pyqtSlot
+from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QPushButton, QMainWindow
 
-
-from tools import tool
-from tools import mythread
-from tools import mylog
-from tools import sql   
-import threading
+from tool_new import check_dir,check_file_is_exist, get_year_month_day
+from worker import TaskManager
 import os
 import platform
 import subprocess
 import pandas as pd
-from tools.param import Param
-
+from myglobal import FUND_INFO_BASIC,FUND_INFO_FEE,FUND_INFO_DRAWDOWN,FUND_INFO_FENHONG
+from myglobal import BOND_INFO_LIST,BOND_INFO_DETAIL
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -31,15 +29,23 @@ class Window(QMainWindow, Ui_MainWindow):
         self.items_name_code = {} # name -- code
         self.items_code_name = {} # code -- name
 
- 
+        ### data
+        self.cur_funds = [] 
+
+        # 线程池
+        self.pool = QThreadPool()
+        self.pool.setMaxThreadCount(50)
+        self.work_mgr = TaskManager()
+
+        ### ui
         self.init_ui()  # 界面绘制交给InitUi方法
 
         # tool.log_init(self.m_log)
         self.m_tt_input_zhishu_name.setText('纳斯达克')
 
-        self._print_txt('晨星数据加载中')
-        # sql.cx_data_init()
-        self._print_txt('晨星数据加载完成')
+        # self._print_txt('晨星数据加载中')
+        # # sql.cx_data_init()
+        # self._print_txt('晨星数据加载完成')
         
         self._load_datas()
 
@@ -47,43 +53,25 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         # 创建目录
-        tool.check_dir("datas")
+        check_dir("datas")
         # os.path.join(os.getcwd(), "images", 'xxx')
-        tool.check_dir(self._get_today_dir())
+        check_dir(self._get_today_dir())
 
-        # 线程
         # 搜索指数列表
-        self._mythread_s_list= mythread.MyThread_tt_do_search_zhishu_list()
-        self._mythread_s_list.on_out_text_signal.connect(self._print_txt)
-        
-        self._mythread_s_detail= mythread.MyThread_tt_do_search_zhishu_detail()
-        self._mythread_s_detail.on_out_text_signal.connect(self._print_txt)
-        
-        self._mythread_get_max_drawdown= mythread.MyThread_tt_do_get_max_drawdown()
-        self._mythread_get_max_drawdown.on_out_text_signal.connect(self._print_txt)
-
-
-        
-        self._mythread_s_bondlist= mythread.MyThread_tt_do_get_bond_list()
-        self._mythread_s_bondlist.on_out_text_signal.connect(self._print_txt)
-
-        self._mythread_s_bond_detail= mythread.MyThread_tt_do_get_bond_detail_nh_hc()
-        self._mythread_s_bond_detail.on_out_text_signal.connect(self._print_txt)
-
-        self.m_tt_funds.cellClicked.connect(self._table_item_click)
+        self.m_tt_funds.cellClicked.connect(self.on_m_tt_funds_cellClicked)
         
 
     def _get_today_dir(self)->str:
-        return "datas/"+tool.get_year_month_day()
+        return "datas/"+get_year_month_day()
 
     def _print_txt(self, s):
         self.m_log.append(s)
 
-    def _table_item_click(self, row, col):
-        self.m_log.append(f'{row}-{col}')
-        if col == 0:
-            self.m_tt_funds.removeRow(row)
-        self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
+    # def _table_item_click(self, row, col):
+    #     self.m_log.append(f'{row}-{col}')
+    #     if col == 0:
+    #         self.m_tt_funds.removeRow(row)
+    #     self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
 
     ########## 加载数据
     def _load_datas(self):
@@ -101,9 +89,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.m_tt_fund_info.setText(f"累计:0")
 
-        self.m_tt_ck_nianfei.setChecked(True)
-        self.m_tt_ck_huiche.setChecked(True)
-        self.m_tt_ck_fenhong.setChecked(True)
+        # self.m_tt_ck_fenhong.setChecked(True)
 
 
 
@@ -139,11 +125,16 @@ class Window(QMainWindow, Ui_MainWindow):
 
 
     ################### 信号
+    # @pyqtSlot()
 
-    def _th_do_search_zhishu(self, param):
-        tool.tt_do_search_zhishu(param)
-        self._print_txt('搜索结束，共搜索到%d条结果' % 1)
-        self._print_txt('如需要进一步获取详情，请点击获取详情按钮')
+    def on_m_tt_funds_cellClicked(self, row, col):
+        self._print_txt(f'{row}-{col}')
+
+        if col == 0:
+            self.m_tt_funds.removeRow(row)
+            # 移除当前选中的item
+
+        self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
 
 
     @pyqtSlot()
@@ -189,9 +180,9 @@ class Window(QMainWindow, Ui_MainWindow):
         df.to_excel(f"{self._get_today_dir()}/{_key}.xlsx", index=False)
         
 
-    @pyqtSlot()
+    # 搜索指数
+    @pyqtSlot() 
     def on_m_tt_btn_search_zhishu_clicked(self):
-
         _key = self.m_tt_input_zhishu_name.text()
         if _key == '':
             self._print_txt('请正确输入文本')
@@ -200,28 +191,129 @@ class Window(QMainWindow, Ui_MainWindow):
         funds = []
         # 当日是否搜索过
         fname = self._get_today_dir() + "/" + f"{_key}_all.xlsx"
-        if tool.check_file_is_exist(fname):
+        if check_file_is_exist(fname):
             self._print_txt('今日已经搜素过')
             f1 = pd.read_excel(fname, dtype=str)
             for index, row in f1.iterrows():
                 funds.append({'_id':row["_id"], 'NAME':row["NAME"]})
 
-        else:
-            param = Param(_key, self._get_today_dir())
-            self._print_txt('正在搜索中....')
-            self._th_do_search_zhishu(param)
 
-            # param = Param(_key, self._get_today_dir())
-            # self._mythread_s_list.set_params(param)
-            # self._mythread_s_list.start()
+            self._cb_search_fund_list(funds)
+            return
+        
+        pp = {
+            'key': _key,
+            'out_dir': self._get_today_dir(),
+        }
+        worker = self.work_mgr.get_worker_search(pp)
+        worker.signals.log.connect(self._print_txt)
+        worker.signals.search_fund_list.connect(self._cb_search_fund_list)
+        self.pool.start(worker)
 
-            funds = tool.tt_do_search_zhishu_cache()
-        # # print(funds)
+        return 
+    
+    def _get_tt_fund_info(self, mode):
 
-        # self.m_tt_funds.clear()
+        _key = self.m_tt_input_zhishu_name.text()
+        if _key == '':
+            self._print_txt('请正确输入文本')
+            return None
+
+        tmp = []
+        total = self.m_tt_funds.rowCount()
+        for i in range(total):
+            code = self.m_tt_funds.item(i, 1).text()
+            name = self.m_tt_funds.item(i, 2).text()
+            tmp.append({'CODE': code, 'NAME': name})
+        
+        if len(tmp) == 0:
+            self._print_txt('无选择基金')
+            return None
+        #####
+        pp = {
+            'mode': mode,
+            'key': _key,
+            'out_dir': self._get_today_dir(),
+            'cur_funds': tmp,
+        }
+
+        worker = self.work_mgr.get_worker_fund(pp)
+        worker.signals.log.connect(self._print_txt)
+        worker.signals.search_fund_item.connect(self._cb_search_one_fund_detail)
+        self.pool.start(worker)
+ 
+    # 搜索基本信息
+    @pyqtSlot()
+    def on_m_tt_btn_search_detail_clicked(self):
+        self._get_tt_fund_info(FUND_INFO_BASIC)
+        
+    # 搜索分红
+    @pyqtSlot()
+    def on_m_tt_btn_search_fenhong_clicked(self):
+        self._get_tt_fund_info(FUND_INFO_FENHONG)
+ 
+    # 搜索回撤
+    @pyqtSlot()
+    def on_m_tt_btn_search_drawdown_clicked(self):        
+        self._get_tt_fund_info(FUND_INFO_DRAWDOWN)
+ 
+    # 搜索管理费
+    @pyqtSlot()
+    def on_m_tt_btn_search_fee_clicked(self):        
+        self._get_tt_fund_info(FUND_INFO_FEE)
+
+    # 导出数据
+    @pyqtSlot()
+    def on_m_tt_btn_export_clicked(self):
+        pp = self._get_tt_fund_info()
+        if pp is None:
+            return
+        worker = self.work_mgr.get_worker_export(pp)
+        worker.signals.log.connect(self._print_txt)
+        worker.signals.search_fund_item.connect(self._cb_search_one_fund_detail)
+        self.pool.start(worker)
+
+    ### 债券
+    @pyqtSlot()
+    def on_m_tt_btn_bond_detail_clicked(self):
+        params = {
+            "mode": BOND_INFO_DETAIL,
+        }
+        worker = self.work_mgr.get_worker_bond(params=params)
+        worker.signals.log.connect(self._print_txt)
+        worker.signals.finished.connect(self._cb_search_bond_finished)
+        self.pool.start(worker)
+        self._print_txt("开始查询中...")
+
+        
+    @pyqtSlot()
+    def on_m_tt_btn_bond_list_clicked(self):
+        self._print_txt("开始查询中...")
+        params = {
+            "mode": BOND_INFO_LIST,
+        }
+        worker = self.work_mgr.get_worker_bond(params=params)
+        worker.signals.log.connect(self._print_txt)
+        worker.signals.finished.connect(self._cb_search_bond_finished)
+        self.pool.start(worker)
+
+
+    def _cb_search_one_fund_detail(self, fund:dict):
+        # {'代码': '159660', '名称': '汇添富纳斯达克100ETF', '累计净值': '', '规模': '37.72', '基金经理': '过蓓蓓', '成立日': '2023-03-30', '管理人': '汇添富基金', '跟踪标的': '纳斯达克100指数', '年化跟踪误差': ' 1.05%', '交易状态': '场内交易  ', '购买手续费': '', '近1周': '-3.03%', '近1月': '-5.98%', '近3月': '-9.69%', '近6月': '-6.60%', '今年来': '-8.19%', '近1年': '13.80%', '近2年': '25.54%', '近3年': '--', '成立来': '77.74%', '2025': '17.24%', '2024': '26.68%', '2023': '--', '2022': '--', '2021': '--', '2020': '--', '2019': '--', '2018': '--'}
+        # print(fund)   
+        pass
+
+    def _cb_search_fund_list(self, funds:list):
+        self.cur_funds = funds
+
         self.m_tt_funds.setRowCount(0)
 
         for i,item in enumerate(funds):
+            '''
+            {'CODE': '019525', 
+            'NAME': '华泰柏瑞纳斯达克100ETF发起式联接(QDII)C',
+            'NEWTEXCH': '', 'STOCKMARKET': '', '_id': '019525'}'''
+
             cur = self.m_tt_funds.rowCount()
 
             self.m_tt_funds.insertRow(cur)
@@ -235,64 +327,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.m_tt_fund_info.setText(f"累计:{self.m_tt_funds.rowCount()}")
 
-    @pyqtSlot()
-    def on_m_tt_btn_search_detail_clicked(self):
- 
-        _key = self.m_tt_input_zhishu_name.text()
 
-        if _key == '':
-            self._print_txt('请正确输入文本')
-            return
-
-        #####
-
-        enable_nianfei = self.m_tt_ck_nianfei.isChecked()
-        enable_fenhong = self.m_tt_ck_fenhong.isChecked()
-        enable_huiche = self.m_tt_ck_huiche.isChecked()
-        param = Param(_key, self._get_today_dir(), enable_nianfei, enable_fenhong, enable_huiche)
-        self._mythread_s_detail.set_params(param)
-        self._mythread_s_detail.start()
-
-    @pyqtSlot()
-    def on_m_tt_btn_search_drawdown_clicked(self):
-
-        _key = self.m_tt_input_zhishu_name.text()
-
-        if _key == '':
-            self._print_txt('请正确输入文本')
-            return
-
-        self._mythread_get_max_drawdown.set_params(_key, self._get_today_dir())
-        self._mythread_get_max_drawdown.start()
-
-
-    @pyqtSlot()
-    def on_m_info_bond_div_stock_clicked(self):
-        self._print_txt('正在查询,请勿操作...')
-
-
-        snq = tool._calc_cur_bond_div_stock_bond()
-        self._print_txt(f'十年期国债收益率为:{snq}')
-        avgv = tool._calc_cur_bond_div_stock_stock()
-        self._print_txt(f'A股票的平均市盈为:{avgv}')
- 
-        v = 1/avgv*100/ snq
-        self._print_txt(f'当前债股收益率比:{v}')
-        
-    @pyqtSlot()
-    def on_m_tt_btn_search_bond_clicked(self):
-
-        ft = self.m_tt_bond_tp.currentData()
-        self._mythread_s_bondlist.set_params(self._get_today_dir(), ft)
-        self._mythread_s_bondlist.start()
-        
-    @pyqtSlot()
-    def on_m_tt_btn_search_bond2_clicked(self):
-        
-        self._mythread_s_bond_detail.set_params(self._get_today_dir())
-        self._mythread_s_bond_detail.start()
-
-
+    def _cb_search_bond_finished(self):
+        self._print_txt("搜索债券完成")
+        pass
 
 if __name__ == '__main__':
     # 创建应用程序和对象

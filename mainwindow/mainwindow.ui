@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>571</width>
+    <width>711</width>
     <height>676</height>
    </rect>
   </property>
@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>500</y>
-      <width>391</width>
-      <height>141</height>
+      <y>480</y>
+      <width>541</width>
+      <height>151</height>
      </rect>
     </property>
    </widget>
@@ -28,19 +28,14 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
-      <width>991</width>
-      <height>461</height>
+      <y>20</y>
+      <width>671</width>
+      <height>451</height>
      </rect>
     </property>
     <property name="currentIndex">
      <number>1</number>
     </property>
-    <widget class="QWidget" name="m_chenxing">
-     <attribute name="title">
-      <string>晨星</string>
-     </attribute>
-    </widget>
     <widget class="QWidget" name="m_tiantian">
      <attribute name="title">
       <string>天天</string>
@@ -84,8 +79,8 @@
      <widget class="QPushButton" name="m_tt_btn_search_detail">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>20</y>
+        <x>260</x>
+        <y>40</y>
         <width>75</width>
         <height>23</height>
        </rect>
@@ -97,14 +92,14 @@
      <widget class="QPushButton" name="m_tt_btn_search_drawdown">
       <property name="geometry">
        <rect>
-        <x>480</x>
-        <y>20</y>
+        <x>520</x>
+        <y>40</y>
         <width>75</width>
         <height>23</height>
        </rect>
       </property>
       <property name="text">
-       <string>更新回撤</string>
+       <string>获取回撤</string>
       </property>
      </widget>
      <widget class="QTableWidget" name="m_tt_funds">
@@ -112,7 +107,7 @@
        <rect>
         <x>10</x>
         <y>120</y>
-        <width>511</width>
+        <width>531</width>
         <height>301</height>
        </rect>
       </property>
@@ -133,7 +128,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>80</y>
+        <y>90</y>
         <width>131</width>
         <height>21</height>
        </rect>
@@ -145,7 +140,7 @@
      <widget class="QLineEdit" name="m_tt_fund_cond">
       <property name="geometry">
        <rect>
-        <x>250</x>
+        <x>240</x>
         <y>90</y>
         <width>113</width>
         <height>20</height>
@@ -155,7 +150,7 @@
      <widget class="QLabel" name="m_tt_fund_info_2">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>190</x>
         <y>90</y>
         <width>41</width>
         <height>21</height>
@@ -165,36 +160,10 @@
        <string>不包含</string>
       </property>
      </widget>
-     <widget class="QCheckBox" name="m_tt_ck_fenhong">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>20</y>
-        <width>71</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>分红</string>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="m_tt_ck_nianfei">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>50</y>
-        <width>71</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>管理费</string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="m_tt_btn_fund_cond">
       <property name="geometry">
        <rect>
-        <x>370</x>
+        <x>360</x>
         <y>90</y>
         <width>75</width>
         <height>23</height>
@@ -204,23 +173,10 @@
        <string>应用条件</string>
       </property>
      </widget>
-     <widget class="QCheckBox" name="m_tt_ck_huiche">
-      <property name="geometry">
-       <rect>
-        <x>340</x>
-        <y>20</y>
-        <width>51</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>回撤</string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="m_tt_btn_opendir">
       <property name="geometry">
        <rect>
-        <x>470</x>
+        <x>450</x>
         <y>90</y>
         <width>75</width>
         <height>23</height>
@@ -230,22 +186,61 @@
        <string>打开目录</string>
       </property>
      </widget>
-    </widget>
-    <widget class="QWidget" name="m_tiantian_bond">
-     <attribute name="title">
-      <string>天天债券</string>
-     </attribute>
-     <widget class="QPushButton" name="m_tt_btn_search_bond2">
+     <widget class="QPushButton" name="m_tt_btn_search_fenhong">
       <property name="geometry">
        <rect>
-        <x>130</x>
-        <y>60</y>
+        <x>340</x>
+        <y>40</y>
         <width>75</width>
         <height>23</height>
        </rect>
       </property>
       <property name="text">
-       <string>bond2</string>
+       <string>获取分红</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="m_tt_btn_search_fee">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>40</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>管理费</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="m_tt_btn_export">
+      <property name="geometry">
+       <rect>
+        <x>530</x>
+        <y>90</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>导出数据</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="m_tiantian_bond">
+     <attribute name="title">
+      <string>天天债券</string>
+     </attribute>
+     <widget class="QPushButton" name="m_tt_btn_bond_detail">
+      <property name="geometry">
+       <rect>
+        <x>290</x>
+        <y>30</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>查询详情</string>
       </property>
      </widget>
      <widget class="QComboBox" name="m_tt_bond_tp">
@@ -258,24 +253,33 @@
        </rect>
       </property>
      </widget>
-     <widget class="QPushButton" name="m_tt_btn_search_bond">
+     <widget class="QPushButton" name="m_tt_btn_bond_list">
       <property name="geometry">
        <rect>
-        <x>40</x>
-        <y>60</y>
+        <x>200</x>
+        <y>30</y>
         <width>75</width>
         <height>23</height>
        </rect>
       </property>
       <property name="text">
-       <string>bond</string>
+       <string>查询列表</string>
       </property>
      </widget>
-    </widget>
-    <widget class="QWidget" name="m_zhongzheng">
-     <attribute name="title">
-      <string>中证指数</string>
-     </attribute>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>90</y>
+        <width>441</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>全部基金 --&gt; 选择债券型 
+ https://fund.eastmoney.com/fund.html#os_0;isall_0;ft_;pt_1</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="m_zhongzhai">
      <attribute name="title">
@@ -312,8 +316,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>571</width>
-     <height>23</height>
+     <width>711</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
