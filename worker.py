@@ -7,7 +7,6 @@ from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
 from PyQt5.Qt import QMessageBox
 
 from myglobal import state_manager
-from myglobal import state_manager, is_valid_ip, NETWORK_MODE_DHCP, NETWORK_MODE_STATIC,get_user_home
 from datetime import datetime
 import time
 import requests
